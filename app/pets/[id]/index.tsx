@@ -8,15 +8,26 @@ import {
   ActivityIndicator,
 } from "react-native";
 import { Image } from "expo-image";
-import { Stack, useRouter, useLocalSearchParams } from "expo-router";
+import { Stack, useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { useCallback } from "react";
 import { usePet, useDeletePet } from "@/hooks/usePets";
+import { useVisitsByPet, useMarkVisitComplete } from "@/hooks/useVisits";
+import { VisitCard } from "@/components/VisitCard";
 
 export default function PetDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { pet, isLoading } = usePet(id);
+  const { pet, isLoading: isPetLoading } = usePet(id);
   const { remove } = useDeletePet();
+  const { visits, isLoading: isVisitsLoading, refetch: refetchVisits } = useVisitsByPet(id);
+  const { markComplete } = useMarkVisitComplete();
+
+  useFocusEffect(
+    useCallback(() => {
+      refetchVisits();
+    }, [refetchVisits])
+  );
 
   const handleDelete = () => {
     Alert.alert(
@@ -37,7 +48,12 @@ export default function PetDetailScreen() {
     );
   };
 
-  if (isLoading || !pet) {
+  const handleCompleteVisit = async (visitId: string) => {
+    await markComplete(visitId);
+    refetchVisits();
+  };
+
+  if (isPetLoading || !pet) {
     return (
       <>
         <Stack.Screen options={{ title: "Pet Details" }} />
@@ -50,6 +66,13 @@ export default function PetDetailScreen() {
 
   const speciesIcon = pet.species === "dog" ? "🐕" : "🐈";
   const age = pet.birthDate ? calculateAge(pet.birthDate) : null;
+
+  const upcomingVisits = visits.filter(
+    (v) => !v.completed && new Date(v.scheduledDate) >= new Date()
+  );
+  const pastVisits = visits.filter(
+    (v) => v.completed || new Date(v.scheduledDate) < new Date()
+  );
 
   return (
     <>
@@ -104,7 +127,7 @@ export default function PetDetailScreen() {
 
         <View style={styles.infoSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Vet Visits</Text>
+            <Text style={styles.sectionTitle}>Upcoming Visits</Text>
             <Pressable
               style={styles.addButton}
               onPress={() => router.push(`/pets/${id}/visits/new`)}
@@ -113,14 +136,44 @@ export default function PetDetailScreen() {
               <Text style={styles.addButtonText}>Add</Text>
             </Pressable>
           </View>
-          <View style={styles.emptyVisits}>
-            <Ionicons name="medical-outline" size={32} color="#ccc" />
-            <Text style={styles.emptyText}>No vet visits scheduled</Text>
-            <Text style={styles.emptySubtext}>
-              Tap Add to schedule a vaccination or checkup
-            </Text>
-          </View>
+          {isVisitsLoading ? (
+            <ActivityIndicator size="small" color="#007AFF" />
+          ) : upcomingVisits.length === 0 ? (
+            <View style={styles.emptyVisits}>
+              <Ionicons name="medical-outline" size={32} color="#ccc" />
+              <Text style={styles.emptyText}>No upcoming visits</Text>
+              <Text style={styles.emptySubtext}>
+                Tap Add to schedule a vaccination or checkup
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.visitsList}>
+              {upcomingVisits.map((visit) => (
+                <VisitCard
+                  key={visit.id}
+                  visit={visit}
+                  onPress={() => router.push(`/visits/${visit.id}/edit`)}
+                  onComplete={() => handleCompleteVisit(visit.id)}
+                />
+              ))}
+            </View>
+          )}
         </View>
+
+        {pastVisits.length > 0 && (
+          <View style={styles.infoSection}>
+            <Text style={styles.sectionTitle}>Past Visits</Text>
+            <View style={styles.visitsList}>
+              {pastVisits.map((visit) => (
+                <VisitCard
+                  key={visit.id}
+                  visit={visit}
+                  onPress={() => router.push(`/visits/${visit.id}/edit`)}
+                />
+              ))}
+            </View>
+          </View>
+        )}
 
         <Pressable style={styles.deleteButton} onPress={handleDelete}>
           <Ionicons name="trash-outline" size={20} color="#FF3B30" />
@@ -137,8 +190,7 @@ function calculateAge(birthDate: Date): string {
   const months = now.getMonth() - birthDate.getMonth();
 
   if (years < 1) {
-    const totalMonths =
-      months >= 0 ? months : 12 + months;
+    const totalMonths = months >= 0 ? months : 12 + months;
     return `${totalMonths} month${totalMonths !== 1 ? "s" : ""}`;
   }
 
@@ -235,6 +287,9 @@ const styles = StyleSheet.create({
     color: "#007AFF",
     fontSize: 16,
     fontWeight: "500",
+  },
+  visitsList: {
+    gap: 4,
   },
   emptyVisits: {
     backgroundColor: "#fff",
