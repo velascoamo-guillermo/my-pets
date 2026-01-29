@@ -7,10 +7,34 @@ import {
   Pressable,
   ScrollView,
   Alert,
+  useColorScheme,
 } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import type { VetVisit } from "@/db/schema";
+
+const colors = {
+  light: {
+    background: "#ffffff",
+    text: "#333",
+    textSecondary: "#666",
+    textTertiary: "#999",
+    tint: "#007AFF",
+    tintBackground: "#F0F8FF",
+    inputBorder: "#ddd",
+    inputBackground: "#ffffff",
+  },
+  dark: {
+    background: "#000000",
+    text: "#ffffff",
+    textSecondary: "#aaaaaa",
+    textTertiary: "#777",
+    tint: "#0A84FF",
+    tintBackground: "#1a3a5c",
+    inputBorder: "#333",
+    inputBackground: "#1c1c1e",
+  },
+};
 
 type VisitType = "vaccination" | "checkup" | "emergency" | "other";
 
@@ -43,6 +67,8 @@ const REMINDER_OPTIONS = [
 ];
 
 export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps) {
+  const colorScheme = useColorScheme();
+  const theme = colors[colorScheme ?? "light"];
   const [type, setType] = useState<VisitType>(initialData?.type ?? "checkup");
   const [title, setTitle] = useState(initialData?.title ?? "");
   const [notes, setNotes] = useState(initialData?.notes ?? "");
@@ -77,27 +103,29 @@ export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
-      <Text style={styles.label}>Visit Type</Text>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
+      <Text style={[styles.label, { color: theme.text }]}>Visit Type</Text>
       <View style={styles.typeContainer}>
         {VISIT_TYPES.map((item) => (
           <Pressable
             key={item.value}
             style={[
               styles.typeButton,
-              type === item.value && styles.typeButtonActive,
+              { borderColor: theme.inputBorder },
+              type === item.value && { borderColor: theme.tint, backgroundColor: theme.tintBackground },
             ]}
             onPress={() => setType(item.value)}
           >
             <Ionicons
               name={item.icon as keyof typeof Ionicons.glyphMap}
               size={24}
-              color={type === item.value ? "#007AFF" : "#666"}
+              color={type === item.value ? theme.tint : theme.textSecondary}
             />
             <Text
               style={[
                 styles.typeText,
-                type === item.value && styles.typeTextActive,
+                { color: theme.textSecondary },
+                type === item.value && { color: theme.tint, fontWeight: "600" },
               ]}
             >
               {item.label}
@@ -106,31 +134,32 @@ export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps
         ))}
       </View>
 
-      <Text style={styles.label}>Title *</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Title *</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
         value={title}
         onChangeText={setTitle}
         placeholder="e.g., Annual vaccination, Dental checkup"
+        placeholderTextColor={theme.textTertiary}
       />
 
-      <Text style={styles.label}>Date & Time</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Date & Time</Text>
       <View style={styles.dateTimeRow}>
         <Pressable
-          style={[styles.dateButton, styles.dateButtonHalf]}
+          style={[styles.dateButton, styles.dateButtonHalf, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground }]}
           onPress={() => setShowDatePicker(true)}
         >
-          <Ionicons name="calendar-outline" size={20} color="#666" />
-          <Text style={styles.dateText}>
+          <Ionicons name="calendar-outline" size={20} color={theme.textSecondary} />
+          <Text style={[styles.dateText, { color: theme.text }]}>
             {scheduledDate.toLocaleDateString()}
           </Text>
         </Pressable>
         <Pressable
-          style={[styles.dateButton, styles.dateButtonHalf]}
+          style={[styles.dateButton, styles.dateButtonHalf, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground }]}
           onPress={() => setShowTimePicker(true)}
         >
-          <Ionicons name="time-outline" size={20} color="#666" />
-          <Text style={styles.dateText}>
+          <Ionicons name="time-outline" size={20} color={theme.textSecondary} />
+          <Text style={[styles.dateText, { color: theme.text }]}>
             {scheduledDate.toLocaleTimeString([], {
               hour: "2-digit",
               minute: "2-digit",
@@ -165,21 +194,23 @@ export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps
         />
       )}
 
-      <Text style={styles.label}>Reminder</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Reminder</Text>
       <View style={styles.reminderContainer}>
         {REMINDER_OPTIONS.map((option) => (
           <Pressable
             key={option.value}
             style={[
               styles.reminderButton,
-              reminderDays === option.value && styles.reminderButtonActive,
+              { borderColor: theme.inputBorder },
+              reminderDays === option.value && { borderColor: theme.tint, backgroundColor: theme.tintBackground },
             ]}
             onPress={() => setReminderDays(option.value)}
           >
             <Text
               style={[
                 styles.reminderText,
-                reminderDays === option.value && styles.reminderTextActive,
+                { color: theme.textSecondary },
+                reminderDays === option.value && { color: theme.tint, fontWeight: "500" },
               ]}
             >
               {option.label}
@@ -188,19 +219,20 @@ export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps
         ))}
       </View>
 
-      <Text style={styles.label}>Notes</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Notes</Text>
       <TextInput
-        style={[styles.input, styles.textArea]}
+        style={[styles.input, styles.textArea, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
         value={notes}
         onChangeText={setNotes}
         placeholder="Add any notes about this visit (optional)"
+        placeholderTextColor={theme.textTertiary}
         multiline
         numberOfLines={4}
         textAlignVertical="top"
       />
 
       <Pressable
-        style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+        style={[styles.submitButton, { backgroundColor: theme.tint }, isSubmitting && styles.submitButtonDisabled]}
         onPress={handleSubmit}
         disabled={isSubmitting}
       >
@@ -215,7 +247,6 @@ export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   content: {
     padding: 20,
@@ -223,13 +254,11 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
@@ -250,21 +279,11 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 12,
     borderWidth: 2,
-    borderColor: "#ddd",
     borderRadius: 8,
     gap: 8,
   },
-  typeButtonActive: {
-    borderColor: "#007AFF",
-    backgroundColor: "#F0F8FF",
-  },
   typeText: {
     fontSize: 14,
-    color: "#666",
-  },
-  typeTextActive: {
-    color: "#007AFF",
-    fontWeight: "600",
   },
   dateTimeRow: {
     flexDirection: "row",
@@ -275,7 +294,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: 8,
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     padding: 12,
   },
@@ -284,7 +302,6 @@ const styles = StyleSheet.create({
   },
   dateText: {
     fontSize: 16,
-    color: "#333",
   },
   reminderContainer: {
     flexDirection: "row",
@@ -295,23 +312,12 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 20,
-  },
-  reminderButtonActive: {
-    borderColor: "#007AFF",
-    backgroundColor: "#F0F8FF",
   },
   reminderText: {
     fontSize: 14,
-    color: "#666",
-  },
-  reminderTextActive: {
-    color: "#007AFF",
-    fontWeight: "500",
   },
   submitButton: {
-    backgroundColor: "#007AFF",
     padding: 16,
     borderRadius: 8,
     alignItems: "center",

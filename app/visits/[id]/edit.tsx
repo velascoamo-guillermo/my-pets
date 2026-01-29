@@ -1,10 +1,23 @@
-import { View, ActivityIndicator, StyleSheet } from "react-native";
+import { View, ActivityIndicator, StyleSheet, useColorScheme } from "react-native";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { useVisit, useUpdateVisit } from "@/hooks/useVisits";
 import { rescheduleNotificationForVisit } from "@/hooks/useNotifications";
 import { VisitForm } from "@/components/VisitForm";
 
+const colors = {
+  light: {
+    background: "#ffffff",
+    tint: "#007AFF",
+  },
+  dark: {
+    background: "#000000",
+    tint: "#0A84FF",
+  },
+};
+
 export default function EditVisitScreen() {
+  const colorScheme = useColorScheme();
+  const theme = colors[colorScheme ?? "light"];
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { visit, isLoading } = useVisit(id);
@@ -36,8 +49,8 @@ export default function EditVisitScreen() {
     return (
       <>
         <Stack.Screen options={{ title: "Edit Visit" }} />
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#007AFF" />
+        <View style={[styles.loading, { backgroundColor: theme.background }]}>
+          <ActivityIndicator size="large" color={theme.tint} />
         </View>
       </>
     );

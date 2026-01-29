@@ -7,12 +7,38 @@ import {
   Pressable,
   ScrollView,
   Alert,
+  useColorScheme,
 } from "react-native";
 import { Image } from "expo-image";
 import * as ImagePicker from "expo-image-picker";
 import { Ionicons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import type { Pet } from "@/db/schema";
+
+const colors = {
+  light: {
+    background: "#ffffff",
+    text: "#333",
+    textSecondary: "#666",
+    textTertiary: "#999",
+    tint: "#007AFF",
+    tintBackground: "#F0F8FF",
+    inputBorder: "#ddd",
+    inputBackground: "#ffffff",
+    placeholderBackground: "#f0f0f0",
+  },
+  dark: {
+    background: "#000000",
+    text: "#ffffff",
+    textSecondary: "#aaaaaa",
+    textTertiary: "#777",
+    tint: "#0A84FF",
+    tintBackground: "#1a3a5c",
+    inputBorder: "#333",
+    inputBackground: "#1c1c1e",
+    placeholderBackground: "#2c2c2e",
+  },
+};
 
 type PetFormData = {
   name: string;
@@ -29,6 +55,8 @@ type PetFormProps = {
 };
 
 export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
+  const colorScheme = useColorScheme();
+  const theme = colors[colorScheme ?? "light"];
   const [name, setName] = useState(initialData?.name ?? "");
   const [species, setSpecies] = useState<"dog" | "cat">(
     initialData?.species ?? "dog"
@@ -79,33 +107,35 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
   };
 
   return (
-    <ScrollView style={styles.container} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
       <Pressable style={styles.imageContainer} onPress={pickImage}>
         {imageUri ? (
           <Image source={{ uri: imageUri }} style={styles.image} />
         ) : (
-          <View style={styles.imagePlaceholder}>
-            <Ionicons name="camera" size={40} color="#999" />
-            <Text style={styles.imagePlaceholderText}>Add Photo</Text>
+          <View style={[styles.imagePlaceholder, { backgroundColor: theme.placeholderBackground }]}>
+            <Ionicons name="camera" size={40} color={theme.textTertiary} />
+            <Text style={[styles.imagePlaceholderText, { color: theme.textTertiary }]}>Add Photo</Text>
           </View>
         )}
       </Pressable>
 
-      <Text style={styles.label}>Name *</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Name *</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
         value={name}
         onChangeText={setName}
         placeholder="Enter pet name"
+        placeholderTextColor={theme.textTertiary}
         autoCapitalize="words"
       />
 
-      <Text style={styles.label}>Species *</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Species *</Text>
       <View style={styles.speciesContainer}>
         <Pressable
           style={[
             styles.speciesButton,
-            species === "dog" && styles.speciesButtonActive,
+            { borderColor: theme.inputBorder },
+            species === "dog" && { borderColor: theme.tint, backgroundColor: theme.tintBackground },
           ]}
           onPress={() => setSpecies("dog")}
         >
@@ -113,7 +143,8 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
           <Text
             style={[
               styles.speciesText,
-              species === "dog" && styles.speciesTextActive,
+              { color: theme.textSecondary },
+              species === "dog" && { color: theme.tint, fontWeight: "600" },
             ]}
           >
             Dog
@@ -122,7 +153,8 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
         <Pressable
           style={[
             styles.speciesButton,
-            species === "cat" && styles.speciesButtonActive,
+            { borderColor: theme.inputBorder },
+            species === "cat" && { borderColor: theme.tint, backgroundColor: theme.tintBackground },
           ]}
           onPress={() => setSpecies("cat")}
         >
@@ -130,7 +162,8 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
           <Text
             style={[
               styles.speciesText,
-              species === "cat" && styles.speciesTextActive,
+              { color: theme.textSecondary },
+              species === "cat" && { color: theme.tint, fontWeight: "600" },
             ]}
           >
             Cat
@@ -138,24 +171,25 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
         </Pressable>
       </View>
 
-      <Text style={styles.label}>Breed</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Breed</Text>
       <TextInput
-        style={styles.input}
+        style={[styles.input, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
         value={breed}
         onChangeText={setBreed}
         placeholder="Enter breed (optional)"
+        placeholderTextColor={theme.textTertiary}
         autoCapitalize="words"
       />
 
-      <Text style={styles.label}>Birth Date</Text>
+      <Text style={[styles.label, { color: theme.text }]}>Birth Date</Text>
       <Pressable
-        style={styles.dateButton}
+        style={[styles.dateButton, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground }]}
         onPress={() => setShowDatePicker(true)}
       >
-        <Text style={birthDate ? styles.dateText : styles.datePlaceholder}>
+        <Text style={birthDate ? [styles.dateText, { color: theme.text }] : [styles.datePlaceholder, { color: theme.textTertiary }]}>
           {birthDate ? birthDate.toLocaleDateString() : "Select date (optional)"}
         </Text>
-        <Ionicons name="calendar-outline" size={20} color="#666" />
+        <Ionicons name="calendar-outline" size={20} color={theme.textSecondary} />
       </Pressable>
 
       {showDatePicker && (
@@ -173,7 +207,7 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
       )}
 
       <Pressable
-        style={[styles.submitButton, isSubmitting && styles.submitButtonDisabled]}
+        style={[styles.submitButton, { backgroundColor: theme.tint }, isSubmitting && styles.submitButtonDisabled]}
         onPress={handleSubmit}
         disabled={isSubmitting}
       >
@@ -188,7 +222,6 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#fff",
   },
   content: {
     padding: 20,
@@ -206,25 +239,21 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#f0f0f0",
     justifyContent: "center",
     alignItems: "center",
   },
   imagePlaceholderText: {
     fontSize: 12,
-    color: "#999",
     marginTop: 4,
   },
   label: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#333",
     marginBottom: 8,
     marginTop: 16,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
@@ -240,44 +269,30 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     padding: 12,
     borderWidth: 2,
-    borderColor: "#ddd",
     borderRadius: 8,
     gap: 8,
-  },
-  speciesButtonActive: {
-    borderColor: "#007AFF",
-    backgroundColor: "#F0F8FF",
   },
   speciesEmoji: {
     fontSize: 24,
   },
   speciesText: {
     fontSize: 16,
-    color: "#666",
-  },
-  speciesTextActive: {
-    color: "#007AFF",
-    fontWeight: "600",
   },
   dateButton: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     padding: 12,
   },
   dateText: {
     fontSize: 16,
-    color: "#333",
   },
   datePlaceholder: {
     fontSize: 16,
-    color: "#999",
   },
   submitButton: {
-    backgroundColor: "#007AFF",
     padding: 16,
     borderRadius: 8,
     alignItems: "center",

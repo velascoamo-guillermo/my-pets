@@ -7,13 +7,41 @@ import {
   Pressable,
   TextInput,
   Alert,
+  useColorScheme,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 import { getSyncStats, syncWithServer } from "@/services/sync";
 import { cancelAllNotifications, getScheduledNotifications } from "@/services/notifications";
 
+const colors = {
+  light: {
+    background: "#f5f5f5",
+    cardBackground: "#ffffff",
+    text: "#333",
+    textSecondary: "#666",
+    textTertiary: "#999",
+    tint: "#007AFF",
+    inputBorder: "#ddd",
+    inputBackground: "#ffffff",
+    chevron: "#999",
+  },
+  dark: {
+    background: "#000000",
+    cardBackground: "#1c1c1e",
+    text: "#ffffff",
+    textSecondary: "#aaaaaa",
+    textTertiary: "#777",
+    tint: "#0A84FF",
+    inputBorder: "#333",
+    inputBackground: "#2c2c2e",
+    chevron: "#666",
+  },
+};
+
 export default function SettingsScreen() {
+  const colorScheme = useColorScheme();
+  const theme = colors[colorScheme ?? "light"];
   const [apiUrl, setApiUrl] = useState("");
   const [syncStats, setSyncStats] = useState({
     pendingPets: 0,
@@ -92,10 +120,10 @@ export default function SettingsScreen() {
   const totalConflicts = syncStats.conflictPets + syncStats.conflictVisits;
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Sync Status</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Sync Status</Text>
+        <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
           <View style={styles.statRow}>
             <View style={styles.statItem}>
               <Ionicons
@@ -103,8 +131,8 @@ export default function SettingsScreen() {
                 size={24}
                 color={totalPending > 0 ? "#FF9500" : "#4CAF50"}
               />
-              <Text style={styles.statValue}>{totalPending}</Text>
-              <Text style={styles.statLabel}>Pending</Text>
+              <Text style={[styles.statValue, { color: theme.text }]}>{totalPending}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Pending</Text>
             </View>
             <View style={styles.statItem}>
               <Ionicons
@@ -112,36 +140,37 @@ export default function SettingsScreen() {
                 size={24}
                 color={totalConflicts > 0 ? "#FF3B30" : "#4CAF50"}
               />
-              <Text style={styles.statValue}>{totalConflicts}</Text>
-              <Text style={styles.statLabel}>Conflicts</Text>
+              <Text style={[styles.statValue, { color: theme.text }]}>{totalConflicts}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Conflicts</Text>
             </View>
             <View style={styles.statItem}>
-              <Ionicons name="notifications-outline" size={24} color="#007AFF" />
-              <Text style={styles.statValue}>{scheduledNotifications}</Text>
-              <Text style={styles.statLabel}>Reminders</Text>
+              <Ionicons name="notifications-outline" size={24} color={theme.tint} />
+              <Text style={[styles.statValue, { color: theme.text }]}>{scheduledNotifications}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Reminders</Text>
             </View>
           </View>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>API Configuration</Text>
-        <View style={styles.card}>
-          <Text style={styles.inputLabel}>Server URL</Text>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>API Configuration</Text>
+        <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
+          <Text style={[styles.inputLabel, { color: theme.text }]}>Server URL</Text>
           <TextInput
-            style={styles.input}
+            style={[styles.input, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
             value={apiUrl}
             onChangeText={setApiUrl}
             placeholder="https://your-api.com"
+            placeholderTextColor={theme.textTertiary}
             autoCapitalize="none"
             autoCorrect={false}
             keyboardType="url"
           />
-          <Text style={styles.helperText}>
+          <Text style={[styles.helperText, { color: theme.textTertiary }]}>
             Configure your backend API URL for syncing data across devices
           </Text>
           <Pressable
-            style={[styles.button, isSyncing && styles.buttonDisabled]}
+            style={[styles.button, { backgroundColor: theme.tint }, isSyncing && styles.buttonDisabled]}
             onPress={handleSync}
             disabled={isSyncing}
           >
@@ -154,26 +183,26 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Notifications</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Notifications</Text>
+        <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
           <Pressable style={styles.menuItem} onPress={handleClearNotifications}>
             <Ionicons name="notifications-off-outline" size={24} color="#FF3B30" />
-            <Text style={styles.menuItemText}>Clear All Notifications</Text>
-            <Ionicons name="chevron-forward" size={20} color="#999" />
+            <Text style={[styles.menuItemText, { color: theme.text }]}>Clear All Notifications</Text>
+            <Ionicons name="chevron-forward" size={20} color={theme.chevron} />
           </Pressable>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>About</Text>
-        <View style={styles.card}>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>About</Text>
+        <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
           <View style={styles.aboutRow}>
-            <Text style={styles.aboutLabel}>Version</Text>
-            <Text style={styles.aboutValue}>1.0.0</Text>
+            <Text style={[styles.aboutLabel, { color: theme.textSecondary }]}>Version</Text>
+            <Text style={[styles.aboutValue, { color: theme.text }]}>1.0.0</Text>
           </View>
           <View style={styles.aboutRow}>
-            <Text style={styles.aboutLabel}>Data Storage</Text>
-            <Text style={styles.aboutValue}>Local (SQLite)</Text>
+            <Text style={[styles.aboutLabel, { color: theme.textSecondary }]}>Data Storage</Text>
+            <Text style={[styles.aboutValue, { color: theme.text }]}>Local (SQLite)</Text>
           </View>
         </View>
       </View>
@@ -184,7 +213,6 @@ export default function SettingsScreen() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
   section: {
     marginTop: 24,
@@ -193,13 +221,11 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 14,
     fontWeight: "600",
-    color: "#666",
     marginBottom: 8,
     textTransform: "uppercase",
     letterSpacing: 0.5,
   },
   card: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
   },
@@ -214,28 +240,23 @@ const styles = StyleSheet.create({
   statValue: {
     fontSize: 24,
     fontWeight: "700",
-    color: "#333",
   },
   statLabel: {
     fontSize: 12,
-    color: "#666",
   },
   inputLabel: {
     fontSize: 14,
     fontWeight: "500",
-    color: "#333",
     marginBottom: 8,
   },
   input: {
     borderWidth: 1,
-    borderColor: "#ddd",
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
   },
   helperText: {
     fontSize: 12,
-    color: "#999",
     marginTop: 8,
     marginBottom: 16,
   },
@@ -244,7 +265,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: 8,
-    backgroundColor: "#007AFF",
     padding: 12,
     borderRadius: 8,
   },
@@ -265,7 +285,6 @@ const styles = StyleSheet.create({
   menuItemText: {
     flex: 1,
     fontSize: 16,
-    color: "#333",
   },
   aboutRow: {
     flexDirection: "row",
@@ -274,10 +293,8 @@ const styles = StyleSheet.create({
   },
   aboutLabel: {
     fontSize: 16,
-    color: "#666",
   },
   aboutValue: {
     fontSize: 16,
-    color: "#333",
   },
 });

@@ -6,6 +6,7 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  useColorScheme,
 } from "react-native";
 import { Image } from "expo-image";
 import { Stack, useRouter, useLocalSearchParams, useFocusEffect } from "expo-router";
@@ -16,7 +17,34 @@ import { useVisitsByPet, useMarkVisitComplete } from "@/hooks/useVisits";
 import { cancelNotificationForVisit } from "@/hooks/useNotifications";
 import { VisitCard } from "@/components/VisitCard";
 
+const colors = {
+  light: {
+    background: "#f5f5f5",
+    cardBackground: "#ffffff",
+    text: "#333",
+    textSecondary: "#666",
+    textTertiary: "#999",
+    tint: "#007AFF",
+    placeholder: "#f0f0f0",
+    placeholderIcon: "#ccc",
+    emptyIcon: "#ccc",
+  },
+  dark: {
+    background: "#000000",
+    cardBackground: "#1c1c1e",
+    text: "#ffffff",
+    textSecondary: "#aaaaaa",
+    textTertiary: "#777",
+    tint: "#0A84FF",
+    placeholder: "#2c2c2e",
+    placeholderIcon: "#555",
+    emptyIcon: "#555",
+  },
+};
+
 export default function PetDetailScreen() {
+  const colorScheme = useColorScheme();
+  const theme = colors[colorScheme ?? "light"];
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { pet, isLoading: isPetLoading } = usePet(id);
@@ -62,8 +90,8 @@ export default function PetDetailScreen() {
     return (
       <>
         <Stack.Screen options={{ title: "Pet Details" }} />
-        <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#007AFF" />
+        <View style={[styles.loading, { backgroundColor: theme.background }]}>
+          <ActivityIndicator size="large" color={theme.tint} />
         </View>
       </>
     );
@@ -86,22 +114,22 @@ export default function PetDetailScreen() {
           title: pet.name,
           headerRight: () => (
             <Pressable onPress={() => router.push(`/pets/${id}/edit`)}>
-              <Ionicons name="pencil" size={22} color="#007AFF" />
+              <Ionicons name="pencil" size={22} color={theme.tint} />
             </Pressable>
           ),
         }}
       />
-      <ScrollView style={styles.container}>
-        <View style={styles.header}>
+      <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+        <View style={[styles.header, { backgroundColor: theme.cardBackground }]}>
           {pet.imageUri ? (
             <Image source={{ uri: pet.imageUri }} style={styles.image} />
           ) : (
-            <View style={styles.imagePlaceholder}>
-              <Ionicons name="paw" size={60} color="#ccc" />
+            <View style={[styles.imagePlaceholder, { backgroundColor: theme.placeholder }]}>
+              <Ionicons name="paw" size={60} color={theme.placeholderIcon} />
             </View>
           )}
-          <Text style={styles.name}>{pet.name}</Text>
-          <Text style={styles.species}>
+          <Text style={[styles.name, { color: theme.text }]}>{pet.name}</Text>
+          <Text style={[styles.species, { color: theme.textSecondary }]}>
             {speciesIcon}{" "}
             {pet.species.charAt(0).toUpperCase() + pet.species.slice(1)}
             {pet.breed ? ` • ${pet.breed}` : ""}
@@ -109,20 +137,20 @@ export default function PetDetailScreen() {
         </View>
 
         <View style={styles.infoSection}>
-          <Text style={styles.sectionTitle}>Information</Text>
-          <View style={styles.infoCard}>
+          <Text style={[styles.sectionTitle, { color: theme.text }]}>Information</Text>
+          <View style={[styles.infoCard, { backgroundColor: theme.cardBackground }]}>
             {age && (
               <View style={styles.infoRow}>
-                <Ionicons name="calendar-outline" size={20} color="#666" />
-                <Text style={styles.infoLabel}>Age</Text>
-                <Text style={styles.infoValue}>{age}</Text>
+                <Ionicons name="calendar-outline" size={20} color={theme.textSecondary} />
+                <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Age</Text>
+                <Text style={[styles.infoValue, { color: theme.text }]}>{age}</Text>
               </View>
             )}
             {pet.birthDate && (
               <View style={styles.infoRow}>
-                <Ionicons name="gift-outline" size={20} color="#666" />
-                <Text style={styles.infoLabel}>Birthday</Text>
-                <Text style={styles.infoValue}>
+                <Ionicons name="gift-outline" size={20} color={theme.textSecondary} />
+                <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Birthday</Text>
+                <Text style={[styles.infoValue, { color: theme.text }]}>
                   {pet.birthDate.toLocaleDateString()}
                 </Text>
               </View>
@@ -132,22 +160,22 @@ export default function PetDetailScreen() {
 
         <View style={styles.infoSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Upcoming Visits</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Upcoming Visits</Text>
             <Pressable
               style={styles.addButton}
               onPress={() => router.push(`/pets/${id}/visits/new`)}
             >
-              <Ionicons name="add" size={20} color="#007AFF" />
-              <Text style={styles.addButtonText}>Add</Text>
+              <Ionicons name="add" size={20} color={theme.tint} />
+              <Text style={[styles.addButtonText, { color: theme.tint }]}>Add</Text>
             </Pressable>
           </View>
           {isVisitsLoading ? (
-            <ActivityIndicator size="small" color="#007AFF" />
+            <ActivityIndicator size="small" color={theme.tint} />
           ) : upcomingVisits.length === 0 ? (
-            <View style={styles.emptyVisits}>
-              <Ionicons name="medical-outline" size={32} color="#ccc" />
-              <Text style={styles.emptyText}>No upcoming visits</Text>
-              <Text style={styles.emptySubtext}>
+            <View style={[styles.emptyVisits, { backgroundColor: theme.cardBackground }]}>
+              <Ionicons name="medical-outline" size={32} color={theme.emptyIcon} />
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>No upcoming visits</Text>
+              <Text style={[styles.emptySubtext, { color: theme.textTertiary }]}>
                 Tap Add to schedule a vaccination or checkup
               </Text>
             </View>
@@ -167,7 +195,7 @@ export default function PetDetailScreen() {
 
         {pastVisits.length > 0 && (
           <View style={styles.infoSection}>
-            <Text style={styles.sectionTitle}>Past Visits</Text>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Past Visits</Text>
             <View style={styles.visitsList}>
               {pastVisits.map((visit) => (
                 <VisitCard
@@ -180,7 +208,7 @@ export default function PetDetailScreen() {
           </View>
         )}
 
-        <Pressable style={styles.deleteButton} onPress={handleDelete}>
+        <Pressable style={[styles.deleteButton, { backgroundColor: theme.cardBackground }]} onPress={handleDelete}>
           <Ionicons name="trash-outline" size={20} color="#FF3B30" />
           <Text style={styles.deleteButtonText}>Delete Pet</Text>
         </Pressable>
@@ -210,7 +238,6 @@ function calculateAge(birthDate: Date): string {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#f5f5f5",
   },
   loading: {
     flex: 1,
@@ -219,7 +246,6 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: "center",
-    backgroundColor: "#fff",
     paddingVertical: 24,
     paddingHorizontal: 16,
   },
@@ -232,19 +258,16 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
-    backgroundColor: "#f0f0f0",
     justifyContent: "center",
     alignItems: "center",
   },
   name: {
     fontSize: 28,
     fontWeight: "700",
-    color: "#333",
     marginTop: 16,
   },
   species: {
     fontSize: 16,
-    color: "#666",
     marginTop: 4,
   },
   infoSection: {
@@ -259,11 +282,9 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontWeight: "600",
-    color: "#333",
     marginBottom: 12,
   },
   infoCard: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
   },
@@ -275,12 +296,10 @@ const styles = StyleSheet.create({
   infoLabel: {
     flex: 1,
     fontSize: 16,
-    color: "#666",
     marginLeft: 12,
   },
   infoValue: {
     fontSize: 16,
-    color: "#333",
     fontWeight: "500",
   },
   addButton: {
@@ -289,7 +308,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   addButtonText: {
-    color: "#007AFF",
     fontSize: 16,
     fontWeight: "500",
   },
@@ -297,19 +315,16 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   emptyVisits: {
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 24,
     alignItems: "center",
   },
   emptyText: {
     fontSize: 16,
-    color: "#666",
     marginTop: 12,
   },
   emptySubtext: {
     fontSize: 14,
-    color: "#999",
     marginTop: 4,
     textAlign: "center",
   },
@@ -321,7 +336,6 @@ const styles = StyleSheet.create({
     marginVertical: 32,
     marginHorizontal: 16,
     padding: 16,
-    backgroundColor: "#fff",
     borderRadius: 12,
     borderWidth: 1,
     borderColor: "#FF3B30",

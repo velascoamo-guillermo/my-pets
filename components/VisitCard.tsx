@@ -1,6 +1,21 @@
-import { View, Text, StyleSheet, Pressable } from "react-native";
+import { View, Text, StyleSheet, Pressable, useColorScheme } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import type { VetVisit } from "@/db/schema";
+
+const colors = {
+  light: {
+    cardBackground: "#ffffff",
+    text: "#333",
+    textSecondary: "#666",
+    textCompleted: "#999",
+  },
+  dark: {
+    cardBackground: "#1c1c1e",
+    text: "#ffffff",
+    textSecondary: "#aaaaaa",
+    textCompleted: "#666",
+  },
+};
 
 type VisitCardProps = {
   visit: VetVisit;
@@ -16,6 +31,8 @@ const TYPE_CONFIG = {
 } as const;
 
 export function VisitCard({ visit, onPress, onComplete }: VisitCardProps) {
+  const colorScheme = useColorScheme();
+  const theme = colors[colorScheme ?? "light"];
   const config = TYPE_CONFIG[visit.type];
   const isUpcoming = new Date(visit.scheduledDate) > new Date();
   const isPast = !isUpcoming && !visit.completed;
@@ -24,6 +41,7 @@ export function VisitCard({ visit, onPress, onComplete }: VisitCardProps) {
     <Pressable
       style={({ pressed }) => [
         styles.card,
+        { backgroundColor: theme.cardBackground },
         visit.completed && styles.cardCompleted,
         pressed && styles.cardPressed,
       ]}
@@ -37,10 +55,10 @@ export function VisitCard({ visit, onPress, onComplete }: VisitCardProps) {
         />
       </View>
       <View style={styles.content}>
-        <Text style={[styles.title, visit.completed && styles.titleCompleted]}>
+        <Text style={[styles.title, { color: theme.text }, visit.completed && { textDecorationLine: "line-through", color: theme.textCompleted }]}>
           {visit.title}
         </Text>
-        <Text style={styles.date}>
+        <Text style={[styles.date, { color: theme.textSecondary }]}>
           {visit.scheduledDate.toLocaleDateString()} at{" "}
           {visit.scheduledDate.toLocaleTimeString([], {
             hour: "2-digit",
@@ -79,7 +97,6 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: "row",
     alignItems: "center",
-    backgroundColor: "#fff",
     borderRadius: 12,
     padding: 12,
     marginVertical: 4,
@@ -109,15 +126,9 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 16,
     fontWeight: "600",
-    color: "#333",
-  },
-  titleCompleted: {
-    textDecorationLine: "line-through",
-    color: "#999",
   },
   date: {
     fontSize: 14,
-    color: "#666",
     marginTop: 2,
   },
   completedBadge: {
