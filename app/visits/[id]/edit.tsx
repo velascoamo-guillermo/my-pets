@@ -1,6 +1,7 @@
 import { View, ActivityIndicator, StyleSheet } from "react-native";
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { useVisit, useUpdateVisit } from "@/hooks/useVisits";
+import { rescheduleNotificationForVisit } from "@/hooks/useNotifications";
 import { VisitForm } from "@/components/VisitForm";
 
 export default function EditVisitScreen() {
@@ -16,14 +17,18 @@ export default function EditVisitScreen() {
     scheduledDate: Date;
     reminderDays: number;
   }) => {
-    if (!id) return;
-    await update(id, {
+    if (!id || !visit) return;
+
+    const updates = {
       type: data.type,
       title: data.title,
       notes: data.notes || undefined,
       scheduledDate: data.scheduledDate,
       reminderDays: data.reminderDays,
-    });
+    };
+
+    await update(id, updates);
+    await rescheduleNotificationForVisit(id, updates, visit);
     router.back();
   };
 

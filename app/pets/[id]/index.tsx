@@ -13,6 +13,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { useCallback } from "react";
 import { usePet, useDeletePet } from "@/hooks/usePets";
 import { useVisitsByPet, useMarkVisitComplete } from "@/hooks/useVisits";
+import { cancelNotificationForVisit } from "@/hooks/useNotifications";
 import { VisitCard } from "@/components/VisitCard";
 
 export default function PetDetailScreen() {
@@ -49,6 +50,10 @@ export default function PetDetailScreen() {
   };
 
   const handleCompleteVisit = async (visitId: string) => {
+    const visit = visits.find((v) => v.id === visitId);
+    if (visit) {
+      await cancelNotificationForVisit(visit);
+    }
     await markComplete(visitId);
     refetchVisits();
   };

@@ -1,5 +1,6 @@
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { useCreateVisit } from "@/hooks/useVisits";
+import { scheduleNotificationForVisit } from "@/hooks/useNotifications";
 import { VisitForm } from "@/components/VisitForm";
 
 export default function NewVisitScreen() {
@@ -15,7 +16,7 @@ export default function NewVisitScreen() {
     reminderDays: number;
   }) => {
     if (!petId) return;
-    await create({
+    const visit = await create({
       petId,
       type: data.type,
       title: data.title,
@@ -24,6 +25,11 @@ export default function NewVisitScreen() {
       reminderDays: data.reminderDays,
       completed: false,
     });
+
+    if (visit && data.reminderDays > 0) {
+      await scheduleNotificationForVisit(visit);
+    }
+
     router.back();
   };
 
