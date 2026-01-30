@@ -48,7 +48,6 @@ export function PetCard({ pet, onPress }: PetCardProps) {
         <Text style={[styles.name, { color: theme.text }]}>{pet.name}</Text>
         <Text style={[styles.species, { color: theme.textSecondary }]}>
           {speciesIcon} {pet.species.charAt(0).toUpperCase() + pet.species.slice(1)}
-          {pet.breed ? ` • ${pet.breed}` : ""}
         </Text>
       </View>
       <Ionicons name="chevron-forward" size={20} color={theme.chevron} />

@@ -4,7 +4,7 @@ export const pets = sqliteTable("pets", {
   id: text("id").primaryKey(),
   name: text("name").notNull(),
   species: text("species", { enum: ["dog", "cat"] }).notNull(),
-  breed: text("breed"),
+
   birthDate: integer("birth_date", { mode: "timestamp" }),
   imageUri: text("image_uri"),
   vetName: text("vet_name"),
@@ -43,7 +43,21 @@ export const vetVisits = sqliteTable("vet_visits", {
     .default("pending"),
 });
 
+export const petFiles = sqliteTable("pet_files", {
+  id: text("id").primaryKey(),
+  petId: text("pet_id")
+    .notNull()
+    .references(() => pets.id, { onDelete: "cascade" }),
+  name: text("name").notNull(),
+  uri: text("uri").notNull(),
+  fileType: text("file_type").notNull(),
+  fileSize: integer("file_size").notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
 export type Pet = typeof pets.$inferSelect;
 export type NewPet = typeof pets.$inferInsert;
 export type VetVisit = typeof vetVisits.$inferSelect;
 export type NewVetVisit = typeof vetVisits.$inferInsert;
+export type PetFile = typeof petFiles.$inferSelect;
+export type NewPetFile = typeof petFiles.$inferInsert;

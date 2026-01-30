@@ -43,6 +43,18 @@ export async function initDatabase() {
 
     CREATE INDEX IF NOT EXISTS idx_vet_visits_pet_id ON vet_visits(pet_id);
     CREATE INDEX IF NOT EXISTS idx_vet_visits_scheduled_date ON vet_visits(scheduled_date);
+
+    CREATE TABLE IF NOT EXISTS pet_files (
+      id TEXT PRIMARY KEY,
+      pet_id TEXT NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+      name TEXT NOT NULL,
+      uri TEXT NOT NULL,
+      file_type TEXT NOT NULL,
+      file_size INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_pet_files_pet_id ON pet_files(pet_id);
   `);
 
   // Migration: add vet columns to existing pets table

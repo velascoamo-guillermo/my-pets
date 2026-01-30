@@ -12,7 +12,6 @@ export default function EditPetScreen() {
   const handleSubmit = async (data: {
     name: string;
     species: "dog" | "cat";
-    breed: string;
     birthDate: Date | null;
     imageUri: string | null;
     vetName: string;
@@ -23,7 +22,6 @@ export default function EditPetScreen() {
     await update(id, {
       name: data.name,
       species: data.species,
-      breed: data.breed || undefined,
       birthDate: data.birthDate ?? undefined,
       imageUri: data.imageUri ?? undefined,
       vetName: data.vetName || undefined,

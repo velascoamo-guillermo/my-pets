@@ -3,3 +3,4 @@ export { DatabaseProvider, useDatabase } from "./provider";
 export * from "./schema";
 export * from "./repositories/pets";
 export * from "./repositories/visits";
+export * from "./repositories/petFiles";

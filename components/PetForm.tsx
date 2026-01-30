@@ -43,7 +43,6 @@ const colors = {
 type PetFormData = {
   name: string;
   species: "dog" | "cat";
-  breed: string;
   birthDate: Date | null;
   imageUri: string | null;
   vetName: string;
@@ -64,7 +63,7 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
   const [species, setSpecies] = useState<"dog" | "cat">(
     initialData?.species ?? "dog"
   );
-  const [breed, setBreed] = useState(initialData?.breed ?? "");
+
   const [birthDate, setBirthDate] = useState<Date | null>(
     initialData?.birthDate ?? null
   );
@@ -101,7 +100,7 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
       await onSubmit({
         name: name.trim(),
         species,
-        breed: breed.trim(),
+
         birthDate,
         imageUri,
         vetName: vetName.trim(),
@@ -179,16 +178,6 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
           </Text>
         </Pressable>
       </View>
-
-      <Text style={[styles.label, { color: theme.text }]}>Breed</Text>
-      <TextInput
-        style={[styles.input, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
-        value={breed}
-        onChangeText={setBreed}
-        placeholder="Enter breed (optional)"
-        placeholderTextColor={theme.textTertiary}
-        autoCapitalize="words"
-      />
 
       <Text style={[styles.label, { color: theme.text }]}>Birth Date</Text>
       <Pressable
