@@ -1,14 +1,14 @@
-import { useEffect } from "react";
-import { Platform } from "react-native";
-import * as Notifications from "expo-notifications";
-import {
-  requestNotificationPermissions,
-  scheduleVisitNotification,
-  cancelVisitNotification,
-} from "@/services/notifications";
 import { getPetById } from "@/db/repositories/pets";
 import { updateVisit } from "@/db/repositories/visits";
-import type { VetVisit, NewVetVisit } from "@/db/schema";
+import type { NewVetVisit, VetVisit } from "@/db/schema";
+import {
+  cancelVisitNotification,
+  requestNotificationPermissions,
+  scheduleVisitNotification,
+} from "@/services/notifications";
+import * as Notifications from "expo-notifications";
+import { useEffect } from "react";
+import { Platform } from "react-native";
 
 export function useNotificationSetup() {
   useEffect(() => {
@@ -26,7 +26,7 @@ export function useNotificationSetup() {
 }
 
 export async function scheduleNotificationForVisit(
-  visit: VetVisit
+  visit: VetVisit,
 ): Promise<string | null> {
   const pet = await getPetById(visit.petId);
   if (!pet) return null;
@@ -45,7 +45,7 @@ export async function scheduleNotificationForVisit(
 }
 
 export async function cancelNotificationForVisit(
-  visit: VetVisit
+  visit: VetVisit,
 ): Promise<void> {
   if (visit.notificationId) {
     await cancelVisitNotification(visit.notificationId);
@@ -56,7 +56,7 @@ export async function cancelNotificationForVisit(
 export async function rescheduleNotificationForVisit(
   visitId: string,
   updates: Partial<Omit<NewVetVisit, "id" | "createdAt">>,
-  currentVisit: VetVisit
+  currentVisit: VetVisit,
 ): Promise<void> {
   if (currentVisit.notificationId) {
     await cancelVisitNotification(currentVisit.notificationId);

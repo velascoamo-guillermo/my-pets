@@ -1,17 +1,20 @@
+import type { VetVisit } from "@/db/schema";
+import { Ionicons } from "@expo/vector-icons";
+import { zodResolver } from "@hookform/resolvers/zod";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useState } from "react";
+import { Controller, useForm } from "react-hook-form";
 import {
-  View,
-  Text,
-  TextInput,
-  StyleSheet,
+  Alert,
   Pressable,
   ScrollView,
-  Alert,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
   useColorScheme,
 } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import DateTimePicker from "@react-native-community/datetimepicker";
-import type { VetVisit } from "@/db/schema";
+import { z } from "zod";
 
 const colors = {
   light: {
@@ -36,15 +39,15 @@ const colors = {
   },
 };
 
-type VisitType = "vaccination" | "checkup" | "emergency" | "other";
+const visitFormSchema = z.object({
+  type: z.enum(["vaccination", "checkup", "emergency", "other"]),
+  title: z.string().min(1, "Please enter a title for this visit"),
+  notes: z.string(),
+  scheduledDate: z.date(),
+  reminderDays: z.number(),
+});
 
-type VisitFormData = {
-  type: VisitType;
-  title: string;
-  notes: string;
-  scheduledDate: Date;
-  reminderDays: number;
-};
+export type VisitFormData = z.infer<typeof visitFormSchema>;
 
 type VisitFormProps = {
   initialData?: VetVisit;
@@ -52,7 +55,7 @@ type VisitFormProps = {
   submitLabel: string;
 };
 
-const VISIT_TYPES: { value: VisitType; label: string; icon: string }[] = [
+const VISIT_TYPES: { value: VisitFormData["type"]; label: string; icon: string }[] = [
   { value: "vaccination", label: "Vaccination", icon: "medical" },
   { value: "checkup", label: "Checkup", icon: "fitness" },
   { value: "emergency", label: "Emergency", icon: "alert-circle" },
@@ -69,171 +72,212 @@ const REMINDER_OPTIONS = [
 export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps) {
   const colorScheme = useColorScheme();
   const theme = colors[colorScheme ?? "light"];
-  const [type, setType] = useState<VisitType>(initialData?.type ?? "checkup");
-  const [title, setTitle] = useState(initialData?.title ?? "");
-  const [notes, setNotes] = useState(initialData?.notes ?? "");
-  const [scheduledDate, setScheduledDate] = useState<Date>(
-    initialData?.scheduledDate ?? new Date()
-  );
-  const [reminderDays, setReminderDays] = useState(initialData?.reminderDays ?? 1);
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [showTimePicker, setShowTimePicker] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const handleSubmit = async () => {
-    if (!title.trim()) {
-      Alert.alert("Error", "Please enter a title for this visit");
-      return;
-    }
+  const {
+    control,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<VisitFormData>({
+    resolver: zodResolver(visitFormSchema),
+    defaultValues: {
+      type: initialData?.type ?? "checkup",
+      title: initialData?.title ?? "",
+      notes: initialData?.notes ?? "",
+      scheduledDate: initialData?.scheduledDate ?? new Date(),
+      reminderDays: initialData?.reminderDays ?? 1,
+    },
+  });
 
-    setIsSubmitting(true);
+  const onFormSubmit = async (data: VisitFormData) => {
     try {
       await onSubmit({
-        type,
-        title: title.trim(),
-        notes: notes.trim(),
-        scheduledDate,
-        reminderDays,
+        ...data,
+        title: data.title.trim(),
+        notes: data.notes.trim(),
       });
     } catch {
       Alert.alert("Error", "Failed to save visit. Please try again.");
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
       <Text style={[styles.label, { color: theme.text }]}>Visit Type</Text>
-      <View style={styles.typeContainer}>
-        {VISIT_TYPES.map((item) => (
-          <Pressable
-            key={item.value}
-            style={[
-              styles.typeButton,
-              { borderColor: theme.inputBorder },
-              type === item.value && { borderColor: theme.tint, backgroundColor: theme.tintBackground },
-            ]}
-            onPress={() => setType(item.value)}
-          >
-            <Ionicons
-              name={item.icon as keyof typeof Ionicons.glyphMap}
-              size={24}
-              color={type === item.value ? theme.tint : theme.textSecondary}
-            />
-            <Text
-              style={[
-                styles.typeText,
-                { color: theme.textSecondary },
-                type === item.value && { color: theme.tint, fontWeight: "600" },
-              ]}
-            >
-              {item.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
-
-      <Text style={[styles.label, { color: theme.text }]}>Title *</Text>
-      <TextInput
-        style={[styles.input, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
-        value={title}
-        onChangeText={setTitle}
-        placeholder="e.g., Annual vaccination, Dental checkup"
-        placeholderTextColor={theme.textTertiary}
+      <Controller
+        control={control}
+        name="type"
+        render={({ field: { onChange, value } }) => (
+          <View style={styles.typeContainer}>
+            {VISIT_TYPES.map((item) => (
+              <Pressable
+                key={item.value}
+                style={[
+                  styles.typeButton,
+                  { borderColor: theme.inputBorder },
+                  value === item.value && { borderColor: theme.tint, backgroundColor: theme.tintBackground },
+                ]}
+                onPress={() => onChange(item.value)}
+              >
+                <Ionicons
+                  name={item.icon as keyof typeof Ionicons.glyphMap}
+                  size={24}
+                  color={value === item.value ? theme.tint : theme.textSecondary}
+                />
+                <Text
+                  style={[
+                    styles.typeText,
+                    { color: theme.textSecondary },
+                    value === item.value && { color: theme.tint, fontWeight: "600" },
+                  ]}
+                >
+                  {item.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
       />
 
+      <Text style={[styles.label, { color: theme.text }]}>Title *</Text>
+      <Controller
+        control={control}
+        name="title"
+        render={({ field: { onChange, value } }) => (
+          <TextInput
+            style={[
+              styles.input,
+              {
+                borderColor: errors.title ? theme.tint : theme.inputBorder,
+                backgroundColor: theme.inputBackground,
+                color: theme.text,
+              },
+            ]}
+            value={value}
+            onChangeText={onChange}
+            placeholder="e.g., Annual vaccination, Dental checkup"
+            placeholderTextColor={theme.textTertiary}
+          />
+        )}
+      />
+      {errors.title && (
+        <Text style={[styles.errorText, { color: "#FF3B30" }]}>
+          {errors.title.message}
+        </Text>
+      )}
+
       <Text style={[styles.label, { color: theme.text }]}>Date & Time</Text>
-      <View style={styles.dateTimeRow}>
-        <Pressable
-          style={[styles.dateButton, styles.dateButtonHalf, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground }]}
-          onPress={() => setShowDatePicker(true)}
-        >
-          <Ionicons name="calendar-outline" size={20} color={theme.textSecondary} />
-          <Text style={[styles.dateText, { color: theme.text }]}>
-            {scheduledDate.toLocaleDateString()}
-          </Text>
-        </Pressable>
-        <Pressable
-          style={[styles.dateButton, styles.dateButtonHalf, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground }]}
-          onPress={() => setShowTimePicker(true)}
-        >
-          <Ionicons name="time-outline" size={20} color={theme.textSecondary} />
-          <Text style={[styles.dateText, { color: theme.text }]}>
-            {scheduledDate.toLocaleTimeString([], {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </Text>
-        </Pressable>
-      </View>
+      <Controller
+        control={control}
+        name="scheduledDate"
+        render={({ field: { onChange, value } }) => (
+          <>
+            <View style={styles.dateTimeRow}>
+              <Pressable
+                style={[styles.dateButton, styles.dateButtonHalf, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground }]}
+                onPress={() => setShowDatePicker(true)}
+              >
+                <Ionicons name="calendar-outline" size={20} color={theme.textSecondary} />
+                <Text style={[styles.dateText, { color: theme.text }]}>
+                  {value.toLocaleDateString()}
+                </Text>
+              </Pressable>
+              <Pressable
+                style={[styles.dateButton, styles.dateButtonHalf, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground }]}
+                onPress={() => setShowTimePicker(true)}
+              >
+                <Ionicons name="time-outline" size={20} color={theme.textSecondary} />
+                <Text style={[styles.dateText, { color: theme.text }]}>
+                  {value.toLocaleTimeString([], {
+                    hour: "2-digit",
+                    minute: "2-digit",
+                  })}
+                </Text>
+              </Pressable>
+            </View>
 
-      {showDatePicker && (
-        <DateTimePicker
-          value={scheduledDate}
-          mode="date"
-          onChange={(event, date) => {
-            setShowDatePicker(false);
-            if (event.type === "set" && date) {
-              setScheduledDate(date);
-            }
-          }}
-        />
-      )}
+            {showDatePicker && (
+              <DateTimePicker
+                value={value}
+                mode="date"
+                onChange={(event, date) => {
+                  setShowDatePicker(false);
+                  if (event.type === "set" && date) {
+                    onChange(date);
+                  }
+                }}
+              />
+            )}
 
-      {showTimePicker && (
-        <DateTimePicker
-          value={scheduledDate}
-          mode="time"
-          onChange={(event, date) => {
-            setShowTimePicker(false);
-            if (event.type === "set" && date) {
-              setScheduledDate(date);
-            }
-          }}
-        />
-      )}
+            {showTimePicker && (
+              <DateTimePicker
+                value={value}
+                mode="time"
+                onChange={(event, date) => {
+                  setShowTimePicker(false);
+                  if (event.type === "set" && date) {
+                    onChange(date);
+                  }
+                }}
+              />
+            )}
+          </>
+        )}
+      />
 
       <Text style={[styles.label, { color: theme.text }]}>Reminder</Text>
-      <View style={styles.reminderContainer}>
-        {REMINDER_OPTIONS.map((option) => (
-          <Pressable
-            key={option.value}
-            style={[
-              styles.reminderButton,
-              { borderColor: theme.inputBorder },
-              reminderDays === option.value && { borderColor: theme.tint, backgroundColor: theme.tintBackground },
-            ]}
-            onPress={() => setReminderDays(option.value)}
-          >
-            <Text
-              style={[
-                styles.reminderText,
-                { color: theme.textSecondary },
-                reminderDays === option.value && { color: theme.tint, fontWeight: "500" },
-              ]}
-            >
-              {option.label}
-            </Text>
-          </Pressable>
-        ))}
-      </View>
+      <Controller
+        control={control}
+        name="reminderDays"
+        render={({ field: { onChange, value } }) => (
+          <View style={styles.reminderContainer}>
+            {REMINDER_OPTIONS.map((option) => (
+              <Pressable
+                key={option.value}
+                style={[
+                  styles.reminderButton,
+                  { borderColor: theme.inputBorder },
+                  value === option.value && { borderColor: theme.tint, backgroundColor: theme.tintBackground },
+                ]}
+                onPress={() => onChange(option.value)}
+              >
+                <Text
+                  style={[
+                    styles.reminderText,
+                    { color: theme.textSecondary },
+                    value === option.value && { color: theme.tint, fontWeight: "500" },
+                  ]}
+                >
+                  {option.label}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        )}
+      />
 
       <Text style={[styles.label, { color: theme.text }]}>Notes</Text>
-      <TextInput
-        style={[styles.input, styles.textArea, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
-        value={notes}
-        onChangeText={setNotes}
-        placeholder="Add any notes about this visit (optional)"
-        placeholderTextColor={theme.textTertiary}
-        multiline
-        numberOfLines={4}
-        textAlignVertical="top"
+      <Controller
+        control={control}
+        name="notes"
+        render={({ field: { onChange, value } }) => (
+          <TextInput
+            style={[styles.input, styles.textArea, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
+            value={value}
+            onChangeText={onChange}
+            placeholder="Add any notes about this visit (optional)"
+            placeholderTextColor={theme.textTertiary}
+            multiline
+            numberOfLines={4}
+            textAlignVertical="top"
+          />
+        )}
       />
 
       <Pressable
         style={[styles.submitButton, { backgroundColor: theme.tint }, isSubmitting && styles.submitButtonDisabled]}
-        onPress={handleSubmit}
+        onPress={handleSubmit(onFormSubmit)}
         disabled={isSubmitting}
       >
         <Text style={styles.submitButtonText}>
@@ -262,6 +306,10 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     padding: 12,
     fontSize: 16,
+  },
+  errorText: {
+    fontSize: 13,
+    marginTop: 4,
   },
   textArea: {
     height: 100,

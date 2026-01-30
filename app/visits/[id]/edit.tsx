@@ -2,7 +2,7 @@ import { View, ActivityIndicator, StyleSheet, useColorScheme } from "react-nativ
 import { Stack, useRouter, useLocalSearchParams } from "expo-router";
 import { useVisit, useUpdateVisit } from "@/hooks/useVisits";
 import { rescheduleNotificationForVisit } from "@/hooks/useNotifications";
-import { VisitForm } from "@/components/VisitForm";
+import { VisitForm, type VisitFormData } from "@/components/VisitForm";
 
 const colors = {
   light: {
@@ -23,13 +23,7 @@ export default function EditVisitScreen() {
   const { visit, isLoading } = useVisit(id);
   const { update } = useUpdateVisit();
 
-  const handleSubmit = async (data: {
-    type: "vaccination" | "checkup" | "emergency" | "other";
-    title: string;
-    notes: string;
-    scheduledDate: Date;
-    reminderDays: number;
-  }) => {
+  const handleSubmit = async (data: VisitFormData) => {
     if (!id || !visit) return;
 
     const updates = {

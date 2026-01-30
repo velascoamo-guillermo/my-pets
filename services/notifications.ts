@@ -1,6 +1,6 @@
+import type { Pet, VetVisit } from "@/db/schema";
 import * as Notifications from "expo-notifications";
 import { Platform } from "react-native";
-import type { VetVisit, Pet } from "@/db/schema";
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -25,7 +25,7 @@ export async function requestNotificationPermissions(): Promise<boolean> {
 
 export async function scheduleVisitNotification(
   visit: VetVisit,
-  pet: Pet
+  pet: Pet,
 ): Promise<string | null> {
   if (visit.reminderDays === 0) {
     return null;
@@ -36,13 +36,19 @@ export async function scheduleVisitNotification(
     return null;
   }
 
+  const now = new Date();
+  const visitDate = new Date(visit.scheduledDate);
+
+  // If the visit itself is in the past, skip
+  if (visitDate <= now) {
+    return null;
+  }
+
   const reminderDate = new Date(visit.scheduledDate);
   reminderDate.setDate(reminderDate.getDate() - visit.reminderDays);
   reminderDate.setHours(9, 0, 0, 0);
 
-  if (reminderDate <= new Date()) {
-    return null;
-  }
+  const isReminderInPast = reminderDate <= now;
 
   const visitTypeLabels = {
     vaccination: "Vaccination",
@@ -55,26 +61,26 @@ export async function scheduleVisitNotification(
     content: {
       title: `${visitTypeLabels[visit.type]} Reminder`,
       body: `${pet.name} has a ${visit.title.toLowerCase()} scheduled ${
-        visit.reminderDays === 1
-          ? "tomorrow"
-          : `in ${visit.reminderDays} days`
+        visit.reminderDays === 1 ? "tomorrow" : `in ${visit.reminderDays} days`
       }`,
       data: {
         visitId: visit.id,
         petId: pet.id,
       },
     },
-    trigger: {
-      type: Notifications.SchedulableTriggerInputTypes.DATE,
-      date: reminderDate,
-    },
+    trigger: isReminderInPast
+      ? null
+      : {
+          type: Notifications.SchedulableTriggerInputTypes.DATE,
+          date: reminderDate,
+        },
   });
 
   return notificationId;
 }
 
 export async function cancelVisitNotification(
-  notificationId: string | null
+  notificationId: string | null,
 ): Promise<void> {
   if (!notificationId) return;
   await Notifications.cancelScheduledNotificationAsync(notificationId);

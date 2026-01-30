@@ -1,20 +1,14 @@
-import { Stack, useRouter, useLocalSearchParams } from "expo-router";
-import { useCreateVisit } from "@/hooks/useVisits";
+import { VisitForm, type VisitFormData } from "@/components/VisitForm";
 import { scheduleNotificationForVisit } from "@/hooks/useNotifications";
-import { VisitForm } from "@/components/VisitForm";
+import { useCreateVisit } from "@/hooks/useVisits";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
 
 export default function NewVisitScreen() {
   const router = useRouter();
   const { id: petId } = useLocalSearchParams<{ id: string }>();
   const { create } = useCreateVisit();
 
-  const handleSubmit = async (data: {
-    type: "vaccination" | "checkup" | "emergency" | "other";
-    title: string;
-    notes: string;
-    scheduledDate: Date;
-    reminderDays: number;
-  }) => {
+  const handleSubmit = async (data: VisitFormData) => {
     if (!petId) return;
     const visit = await create({
       petId,
