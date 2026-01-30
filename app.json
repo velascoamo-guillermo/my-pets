@@ -10,7 +10,10 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.guillermo.velasco.amo.mypets"
+      "bundleIdentifier": "com.guillermo.velasco.amo.mypets",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -45,6 +48,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "a3c70412-b6b5-4efb-b9fa-ea03b2ed8da7"
+      }
+    },
+    "owner": "guillermo.velasco.amo"
   }
 }

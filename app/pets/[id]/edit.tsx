@@ -1,7 +1,7 @@
-import { View, ActivityIndicator, StyleSheet } from "react-native";
-import { Stack, useRouter, useLocalSearchParams } from "expo-router";
+import { PetForm, type PetFormData } from "@/components/PetForm";
 import { usePet, useUpdatePet } from "@/hooks/usePets";
-import { PetForm } from "@/components/PetForm";
+import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 export default function EditPetScreen() {
   const router = useRouter();
@@ -9,15 +9,7 @@ export default function EditPetScreen() {
   const { pet, isLoading } = usePet(id);
   const { update } = useUpdatePet();
 
-  const handleSubmit = async (data: {
-    name: string;
-    species: "dog" | "cat";
-    birthDate: Date | null;
-    imageUri: string | null;
-    vetName: string;
-    vetPhone: string;
-    vetAddress: string;
-  }) => {
+  const handleSubmit = async (data: PetFormData) => {
     if (!id) return;
     await update(id, {
       name: data.name,

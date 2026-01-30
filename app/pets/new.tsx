@@ -1,20 +1,12 @@
-import { Stack, useRouter } from "expo-router";
+import { PetForm, type PetFormData } from "@/components/PetForm";
 import { useCreatePet } from "@/hooks/usePets";
-import { PetForm } from "@/components/PetForm";
+import { Stack, useRouter } from "expo-router";
 
 export default function NewPetScreen() {
   const router = useRouter();
   const { create } = useCreatePet();
 
-  const handleSubmit = async (data: {
-    name: string;
-    species: "dog" | "cat";
-    birthDate: Date | null;
-    imageUri: string | null;
-    vetName: string;
-    vetPhone: string;
-    vetAddress: string;
-  }) => {
+  const handleSubmit = async (data: PetFormData) => {
     await create({
       name: data.name,
       species: data.species,
