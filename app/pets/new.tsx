@@ -12,6 +12,9 @@ export default function NewPetScreen() {
     breed: string;
     birthDate: Date | null;
     imageUri: string | null;
+    vetName: string;
+    vetPhone: string;
+    vetAddress: string;
   }) => {
     await create({
       name: data.name,
@@ -19,6 +22,9 @@ export default function NewPetScreen() {
       breed: data.breed || undefined,
       birthDate: data.birthDate ?? undefined,
       imageUri: data.imageUri ?? undefined,
+      vetName: data.vetName || undefined,
+      vetPhone: data.vetPhone || undefined,
+      vetAddress: data.vetAddress || undefined,
     });
     router.back();
   };

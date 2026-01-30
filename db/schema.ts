@@ -7,6 +7,9 @@ export const pets = sqliteTable("pets", {
   breed: text("breed"),
   birthDate: integer("birth_date", { mode: "timestamp" }),
   imageUri: text("image_uri"),
+  vetName: text("vet_name"),
+  vetPhone: text("vet_phone"),
+  vetAddress: text("vet_address"),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   syncStatus: text("sync_status", {

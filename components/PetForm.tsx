@@ -46,6 +46,9 @@ type PetFormData = {
   breed: string;
   birthDate: Date | null;
   imageUri: string | null;
+  vetName: string;
+  vetPhone: string;
+  vetAddress: string;
 };
 
 type PetFormProps = {
@@ -68,6 +71,9 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
   const [imageUri, setImageUri] = useState<string | null>(
     initialData?.imageUri ?? null
   );
+  const [vetName, setVetName] = useState(initialData?.vetName ?? "");
+  const [vetPhone, setVetPhone] = useState(initialData?.vetPhone ?? "");
+  const [vetAddress, setVetAddress] = useState(initialData?.vetAddress ?? "");
   const [showDatePicker, setShowDatePicker] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
@@ -98,6 +104,9 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
         breed: breed.trim(),
         birthDate,
         imageUri,
+        vetName: vetName.trim(),
+        vetPhone: vetPhone.trim(),
+        vetAddress: vetAddress.trim(),
       });
     } catch {
       Alert.alert("Error", "Failed to save pet. Please try again.");
@@ -206,6 +215,41 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
         />
       )}
 
+      <View style={styles.vetDivider} />
+      <Text style={[styles.sectionTitle, { color: theme.text }]}>Veterinarian</Text>
+
+      <Text style={[styles.label, { color: theme.text }]}>Vet Name</Text>
+      <TextInput
+        style={[styles.input, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
+        value={vetName}
+        onChangeText={setVetName}
+        placeholder="Enter vet name (optional)"
+        placeholderTextColor={theme.textTertiary}
+        autoCapitalize="words"
+      />
+
+      <Text style={[styles.label, { color: theme.text }]}>Phone Number</Text>
+      <TextInput
+        style={[styles.input, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
+        value={vetPhone}
+        onChangeText={setVetPhone}
+        placeholder="Enter phone number (optional)"
+        placeholderTextColor={theme.textTertiary}
+        keyboardType="phone-pad"
+      />
+
+      <Text style={[styles.label, { color: theme.text }]}>Address</Text>
+      <TextInput
+        style={[styles.input, styles.textArea, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
+        value={vetAddress}
+        onChangeText={setVetAddress}
+        placeholder="Enter address (optional)"
+        placeholderTextColor={theme.textTertiary}
+        multiline
+        numberOfLines={3}
+        textAlignVertical="top"
+      />
+
       <Pressable
         style={[styles.submitButton, { backgroundColor: theme.tint }, isSubmitting && styles.submitButtonDisabled]}
         onPress={handleSubmit}
@@ -291,6 +335,21 @@ const styles = StyleSheet.create({
   },
   datePlaceholder: {
     fontSize: 16,
+  },
+  vetDivider: {
+    height: 1,
+    backgroundColor: "#ddd",
+    marginTop: 32,
+    marginBottom: 8,
+  },
+  sectionTitle: {
+    fontSize: 18,
+    fontWeight: "600",
+    marginTop: 16,
+    marginBottom: 4,
+  },
+  textArea: {
+    height: 80,
   },
   submitButton: {
     padding: 16,

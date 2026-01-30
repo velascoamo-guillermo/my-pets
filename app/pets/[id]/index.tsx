@@ -6,6 +6,8 @@ import {
   Pressable,
   Alert,
   ActivityIndicator,
+  Linking,
+  Platform,
   useColorScheme,
 } from "react-native";
 import { Image } from "expo-image";
@@ -157,6 +159,47 @@ export default function PetDetailScreen() {
             )}
           </View>
         </View>
+
+        {(pet.vetName || pet.vetPhone || pet.vetAddress) && (
+          <View style={styles.infoSection}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>Veterinarian</Text>
+            <View style={[styles.infoCard, { backgroundColor: theme.cardBackground }]}>
+              {pet.vetName && (
+                <View style={styles.infoRow}>
+                  <Ionicons name="person-outline" size={20} color={theme.textSecondary} />
+                  <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Name</Text>
+                  <Text style={[styles.infoValue, { color: theme.text }]}>{pet.vetName}</Text>
+                </View>
+              )}
+              {pet.vetPhone && (
+                <Pressable
+                  style={styles.infoRow}
+                  onPress={() => Linking.openURL(`tel:${pet.vetPhone}`)}
+                >
+                  <Ionicons name="call-outline" size={20} color={theme.tint} />
+                  <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Phone</Text>
+                  <Text style={[styles.infoValue, { color: theme.tint }]}>{pet.vetPhone}</Text>
+                </Pressable>
+              )}
+              {pet.vetAddress && (
+                <Pressable
+                  style={styles.infoRow}
+                  onPress={() => {
+                    const encoded = encodeURIComponent(pet.vetAddress!);
+                    const url = Platform.OS === "ios"
+                      ? `maps:?q=${encoded}`
+                      : `geo:0,0?q=${encoded}`;
+                    Linking.openURL(url);
+                  }}
+                >
+                  <Ionicons name="location-outline" size={20} color={theme.tint} />
+                  <Text style={[styles.infoLabel, { color: theme.textSecondary }]}>Address</Text>
+                  <Text style={[styles.infoValue, { color: theme.tint }]}>{pet.vetAddress}</Text>
+                </Pressable>
+              )}
+            </View>
+          </View>
+        )}
 
         <View style={styles.infoSection}>
           <View style={styles.sectionHeader}>

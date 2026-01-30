@@ -17,6 +17,9 @@ export async function initDatabase() {
       breed TEXT,
       birth_date INTEGER,
       image_uri TEXT,
+      vet_name TEXT,
+      vet_phone TEXT,
+      vet_address TEXT,
       created_at INTEGER NOT NULL,
       updated_at INTEGER NOT NULL,
       sync_status TEXT NOT NULL DEFAULT 'pending' CHECK (sync_status IN ('synced', 'pending', 'conflict'))
@@ -41,4 +44,14 @@ export async function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_vet_visits_pet_id ON vet_visits(pet_id);
     CREATE INDEX IF NOT EXISTS idx_vet_visits_scheduled_date ON vet_visits(scheduled_date);
   `);
+
+  // Migration: add vet columns to existing pets table
+  const vetColumns = ["vet_name", "vet_phone", "vet_address"];
+  for (const col of vetColumns) {
+    try {
+      expoDb.execSync(`ALTER TABLE pets ADD COLUMN ${col} TEXT`);
+    } catch {
+      // Column already exists
+    }
+  }
 }

@@ -15,6 +15,9 @@ export default function EditPetScreen() {
     breed: string;
     birthDate: Date | null;
     imageUri: string | null;
+    vetName: string;
+    vetPhone: string;
+    vetAddress: string;
   }) => {
     if (!id) return;
     await update(id, {
@@ -23,6 +26,9 @@ export default function EditPetScreen() {
       breed: data.breed || undefined,
       birthDate: data.birthDate ?? undefined,
       imageUri: data.imageUri ?? undefined,
+      vetName: data.vetName || undefined,
+      vetPhone: data.vetPhone || undefined,
+      vetAddress: data.vetAddress || undefined,
     });
     router.back();
   };
