@@ -146,20 +146,48 @@ function fileToRemote(file: PetFile) {
   };
 }
 
+async function uploadPetImage(pet: Pet): Promise<string | null> {
+  if (!pet.imageUri || !pet.imageUri.startsWith("file://")) return pet.imageUri;
+
+  const localFile = new FSFile(pet.imageUri);
+  if (!localFile.exists) return pet.imageUri;
+
+  const fileName = pet.imageUri.split("/").pop()!;
+  const storagePath = `pet-images/${pet.id}/${fileName}`;
+  const fileBytes = await localFile.bytes();
+
+  const { error } = await supabase.storage
+    .from("pet-files")
+    .upload(storagePath, fileBytes, {
+      contentType: "image/jpeg",
+      upsert: true,
+    });
+
+  if (error) throw new Error(`Pet image upload failed: ${error.message}`);
+
+  const {
+    data: { publicUrl },
+  } = supabase.storage.from("pet-files").getPublicUrl(storagePath);
+
+  return publicUrl;
+}
+
 async function pushPets(): Promise<number> {
   const pending = await getPendingPets();
   if (pending.length === 0) return 0;
 
-  const { error } = await supabase
-    .from("pets")
-    .upsert(pending.map(petToRemote), { onConflict: "id" });
-
-  if (error) throw new Error(`Push pets failed: ${error.message}`);
-
   for (const pet of pending) {
+    const imageUri = await uploadPetImage(pet);
+
+    const { error } = await supabase
+      .from("pets")
+      .upsert(petToRemote({ ...pet, imageUri }), { onConflict: "id" });
+
+    if (error) throw new Error(`Push pets failed: ${error.message}`);
+
     await db
       .update(pets)
-      .set({ syncStatus: "synced" })
+      .set({ syncStatus: "synced", imageUri })
       .where(eq(pets.id, pet.id));
   }
 
@@ -193,11 +221,11 @@ async function uploadFileToStorage(file: PetFile): Promise<string> {
   }
 
   const storagePath = `${file.petId}/${file.id}-${file.name}`;
-  const fileBlob = await localFile.blob();
+  const fileBytes = await localFile.bytes();
 
   const { error } = await supabase.storage
     .from("pet-files")
-    .upload(storagePath, fileBlob, {
+    .upload(storagePath, fileBytes, {
       contentType: file.fileType,
       upsert: true,
     });

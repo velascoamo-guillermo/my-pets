@@ -1,8 +1,15 @@
-import { View, Text, StyleSheet, Pressable, useColorScheme, useWindowDimensions } from "react-native";
-import { Image } from "expo-image";
-import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
-import { Ionicons } from "@expo/vector-icons";
 import type { Pet } from "@/db/schema";
+import { Ionicons } from "@expo/vector-icons";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
+import { Image } from "expo-image";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  useColorScheme,
+  useWindowDimensions,
+  View,
+} from "react-native";
 
 const GRID_PADDING = 16;
 const CARD_GAP = 12;
@@ -29,20 +36,40 @@ export function PetCard({ pet, onPress }: PetCardProps) {
     <Pressable
       style={({ pressed }) => [
         styles.card,
-        { width: cardWidth, height: cardHeight, backgroundColor: isDark ? "#1c1c1e" : "#ffffff" },
+        {
+          width: cardWidth,
+          height: cardHeight,
+          backgroundColor: isDark ? "#1c1c1e" : "#ffffff",
+        },
         pressed && styles.cardPressed,
       ]}
       onPress={onPress}
     >
       {pet.imageUri ? (
-        <Image source={{ uri: pet.imageUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
+        <Image
+          source={{ uri: pet.imageUri }}
+          style={StyleSheet.absoluteFill}
+          contentFit="cover"
+        />
       ) : (
-        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? "#2c2c2e" : "#f0f0f0", justifyContent: "center", alignItems: "center" }]}>
+        <View
+          style={[
+            StyleSheet.absoluteFill,
+            {
+              backgroundColor: isDark ? "#2c2c2e" : "#f0f0f0",
+              justifyContent: "center",
+              alignItems: "center",
+            },
+          ]}
+        >
           <Ionicons name="paw" size={56} color={isDark ? "#555" : "#ccc"} />
         </View>
       )}
       <NameOverlay
-        style={[styles.nameContainer, !glassAvailable && styles.nameContainerFallback]}
+        style={[
+          styles.nameContainer,
+          !glassAvailable && styles.nameContainerFallback,
+        ]}
       >
         <Text style={styles.name} numberOfLines={1}>
           {pet.name}

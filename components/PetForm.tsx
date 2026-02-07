@@ -3,6 +3,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Image } from "expo-image";
+import { Directory, File as FSFile, Paths } from "expo-file-system";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
 import { Controller, useForm } from "react-hook-form";
@@ -123,7 +124,18 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
                 quality: 0.8,
               });
               if (!result.canceled) {
-                onChange(result.assets[0].uri);
+                const tempUri = result.assets[0].uri;
+                const fileName = tempUri.split("/").pop()!;
+                const dir = new Directory(Paths.document, "pet-images");
+                if (!dir.exists) {
+                  dir.create({ intermediates: true });
+                }
+
+                const destination = new FSFile(dir, fileName);
+                const tempFile = new FSFile(tempUri);
+                tempFile.copy(destination);
+
+                onChange(destination.uri);
               }
             }}
           >
