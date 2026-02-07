@@ -1,3 +1,4 @@
+import { pushDeleteToSupabase } from "@/services/sync";
 import { eq } from "drizzle-orm";
 import { randomUUID } from "expo-crypto";
 import { db } from "../client";
@@ -46,5 +47,9 @@ export async function updatePet(
 }
 
 export async function deletePet(id: string): Promise<void> {
+  const pet = await getPetById(id);
+  if (pet?.syncStatus === "synced") {
+    await pushDeleteToSupabase("pets", id);
+  }
   await db.delete(pets).where(eq(pets.id, id));
 }

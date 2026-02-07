@@ -5,13 +5,12 @@ import {
   StyleSheet,
   ScrollView,
   Pressable,
-  TextInput,
   Alert,
   useColorScheme,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { getSyncStats, syncWithServer } from "@/services/sync";
+import { getSyncStats, syncWithSupabase } from "@/services/sync";
 import { cancelAllNotifications, getScheduledNotifications } from "@/services/notifications";
 
 const colors = {
@@ -22,8 +21,6 @@ const colors = {
     textSecondary: "#666",
     textTertiary: "#999",
     tint: "#007AFF",
-    inputBorder: "#ddd",
-    inputBackground: "#ffffff",
     chevron: "#999",
   },
   dark: {
@@ -33,8 +30,6 @@ const colors = {
     textSecondary: "#aaaaaa",
     textTertiary: "#777",
     tint: "#0A84FF",
-    inputBorder: "#333",
-    inputBackground: "#2c2c2e",
     chevron: "#666",
   },
 };
@@ -42,12 +37,11 @@ const colors = {
 export default function SettingsScreen() {
   const colorScheme = useColorScheme();
   const theme = colors[colorScheme ?? "light"];
-  const [apiUrl, setApiUrl] = useState("");
   const [syncStats, setSyncStats] = useState({
     pendingPets: 0,
     pendingVisits: 0,
-    conflictPets: 0,
-    conflictVisits: 0,
+    pendingFiles: 0,
+    lastSyncAt: null as string | null,
   });
   const [scheduledNotifications, setScheduledNotifications] = useState(0);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -71,27 +65,22 @@ export default function SettingsScreen() {
   }, [loadStats]);
 
   const handleSync = async () => {
-    if (!apiUrl) {
-      Alert.alert("Error", "Please enter an API URL first");
-      return;
-    }
-
     setIsSyncing(true);
     try {
-      const result = await syncWithServer(apiUrl);
+      const result = await syncWithSupabase();
       if (result.success) {
+        const pushed = result.pushed.pets + result.pushed.visits + result.pushed.files;
+        const pulled = result.pulled.pets + result.pulled.visits + result.pulled.files;
         Alert.alert(
           "Sync Complete",
-          `Synced ${result.syncedPets} pets and ${result.syncedVisits} visits.${
-            result.conflicts > 0 ? ` ${result.conflicts} conflicts found.` : ""
-          }`
+          `Pushed ${pushed} and pulled ${pulled} records.`
         );
       } else {
         Alert.alert("Sync Failed", result.error ?? "Unknown error");
       }
       loadStats();
     } catch {
-      Alert.alert("Sync Failed", "Could not connect to server");
+      Alert.alert("Sync Failed", "Could not connect to Supabase");
     } finally {
       setIsSyncing(false);
     }
@@ -116,8 +105,10 @@ export default function SettingsScreen() {
     );
   };
 
-  const totalPending = syncStats.pendingPets + syncStats.pendingVisits;
-  const totalConflicts = syncStats.conflictPets + syncStats.conflictVisits;
+  const totalPending = syncStats.pendingPets + syncStats.pendingVisits + syncStats.pendingFiles;
+  const lastSyncLabel = syncStats.lastSyncAt
+    ? new Date(syncStats.lastSyncAt).toLocaleString()
+    : "Never";
 
   return (
     <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
@@ -135,13 +126,9 @@ export default function SettingsScreen() {
               <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Pending</Text>
             </View>
             <View style={styles.statItem}>
-              <Ionicons
-                name={totalConflicts > 0 ? "warning" : "checkmark-circle"}
-                size={24}
-                color={totalConflicts > 0 ? "#FF3B30" : "#4CAF50"}
-              />
-              <Text style={[styles.statValue, { color: theme.text }]}>{totalConflicts}</Text>
-              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Conflicts</Text>
+              <Ionicons name="time-outline" size={24} color={theme.tint} />
+              <Text style={[styles.statValue, { color: theme.text, fontSize: 14 }]}>{lastSyncLabel}</Text>
+              <Text style={[styles.statLabel, { color: theme.textSecondary }]}>Last Sync</Text>
             </View>
             <View style={styles.statItem}>
               <Ionicons name="notifications-outline" size={24} color={theme.tint} />
@@ -153,22 +140,7 @@ export default function SettingsScreen() {
       </View>
 
       <View style={styles.section}>
-        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>API Configuration</Text>
         <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
-          <Text style={[styles.inputLabel, { color: theme.text }]}>Server URL</Text>
-          <TextInput
-            style={[styles.input, { borderColor: theme.inputBorder, backgroundColor: theme.inputBackground, color: theme.text }]}
-            value={apiUrl}
-            onChangeText={setApiUrl}
-            placeholder="https://your-api.com"
-            placeholderTextColor={theme.textTertiary}
-            autoCapitalize="none"
-            autoCorrect={false}
-            keyboardType="url"
-          />
-          <Text style={[styles.helperText, { color: theme.textTertiary }]}>
-            Configure your backend API URL for syncing data across devices
-          </Text>
           <Pressable
             style={[styles.button, { backgroundColor: theme.tint }, isSyncing && styles.buttonDisabled]}
             onPress={handleSync}
@@ -202,7 +174,7 @@ export default function SettingsScreen() {
           </View>
           <View style={styles.aboutRow}>
             <Text style={[styles.aboutLabel, { color: theme.textSecondary }]}>Data Storage</Text>
-            <Text style={[styles.aboutValue, { color: theme.text }]}>Local (SQLite)</Text>
+            <Text style={[styles.aboutValue, { color: theme.text }]}>Local + Supabase</Text>
           </View>
         </View>
       </View>
@@ -243,22 +215,6 @@ const styles = StyleSheet.create({
   },
   statLabel: {
     fontSize: 12,
-  },
-  inputLabel: {
-    fontSize: 14,
-    fontWeight: "500",
-    marginBottom: 8,
-  },
-  input: {
-    borderWidth: 1,
-    borderRadius: 8,
-    padding: 12,
-    fontSize: 16,
-  },
-  helperText: {
-    fontSize: 12,
-    marginTop: 8,
-    marginBottom: 16,
   },
   button: {
     flexDirection: "row",

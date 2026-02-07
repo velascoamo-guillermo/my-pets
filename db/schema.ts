@@ -50,9 +50,15 @@ export const petFiles = sqliteTable("pet_files", {
     .references(() => pets.id, { onDelete: "cascade" }),
   name: text("name").notNull(),
   uri: text("uri").notNull(),
+  remoteUri: text("remote_uri"),
   fileType: text("file_type").notNull(),
   fileSize: integer("file_size").notNull(),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  syncStatus: text("sync_status", {
+    enum: ["synced", "pending", "conflict"],
+  })
+    .notNull()
+    .default("pending"),
 });
 
 export type Pet = typeof pets.$inferSelect;

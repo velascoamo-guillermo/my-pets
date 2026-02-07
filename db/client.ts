@@ -49,21 +49,21 @@ export async function initDatabase() {
       pet_id TEXT NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
       name TEXT NOT NULL,
       uri TEXT NOT NULL,
+      remote_uri TEXT,
       file_type TEXT NOT NULL,
       file_size INTEGER NOT NULL,
-      created_at INTEGER NOT NULL
+      created_at INTEGER NOT NULL,
+      sync_status TEXT NOT NULL DEFAULT 'pending' CHECK (sync_status IN ('synced', 'pending', 'conflict'))
     );
 
     CREATE INDEX IF NOT EXISTS idx_pet_files_pet_id ON pet_files(pet_id);
   `);
 
-  // Migration: add vet columns to existing pets table
-  const vetColumns = ["vet_name", "vet_phone", "vet_address"];
-  for (const col of vetColumns) {
-    try {
-      expoDb.execSync(`ALTER TABLE pets ADD COLUMN ${col} TEXT`);
-    } catch {
-      // Column already exists
-    }
-  }
+  // Sync meta table for tracking last sync timestamp
+  expoDb.execSync(`
+    CREATE TABLE IF NOT EXISTS sync_meta (
+      key TEXT PRIMARY KEY,
+      value TEXT NOT NULL
+    );
+  `);
 }

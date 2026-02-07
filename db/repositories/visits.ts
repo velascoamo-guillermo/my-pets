@@ -1,3 +1,4 @@
+import { pushDeleteToSupabase } from "@/services/sync";
 import { eq, and, gte, lt, desc } from "drizzle-orm";
 import { randomUUID } from "expo-crypto";
 import { db } from "../client";
@@ -98,5 +99,9 @@ export async function markVisitComplete(id: string): Promise<VetVisit | undefine
 }
 
 export async function deleteVisit(id: string): Promise<void> {
+  const visit = await getVisitById(id);
+  if (visit?.syncStatus === "synced") {
+    await pushDeleteToSupabase("vet_visits", id);
+  }
   await db.delete(vetVisits).where(eq(vetVisits.id, id));
 }

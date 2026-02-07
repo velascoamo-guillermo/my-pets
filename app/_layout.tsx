@@ -1,8 +1,10 @@
 import { DatabaseProvider } from "@/db";
 import { useNotificationSetup } from "@/hooks/useNotifications";
+import { syncWithSupabase } from "@/services/sync";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, Stack } from "expo-router";
-import { Pressable, StyleSheet, useColorScheme } from "react-native";
+import { useEffect, useRef } from "react";
+import { AppState, Pressable, StyleSheet, useColorScheme } from "react-native";
 
 const colors = {
   light: {
@@ -23,6 +25,19 @@ function AppContent() {
   useNotificationSetup();
   const colorScheme = useColorScheme();
   const theme = colors[colorScheme ?? "light"];
+  const appState = useRef(AppState.currentState);
+
+  useEffect(() => {
+    const sub = AppState.addEventListener("change", (nextState) => {
+      if (appState.current.match(/inactive|background/) && nextState === "active") {
+        syncWithSupabase().catch(() => {});
+      }
+      appState.current = nextState;
+    });
+    // Also sync on initial mount
+    syncWithSupabase().catch(() => {});
+    return () => sub.remove();
+  }, []);
 
   return (
     <Stack
