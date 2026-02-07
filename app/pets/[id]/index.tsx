@@ -7,7 +7,11 @@ import {
   useFilesByPet,
 } from "@/hooks/usePetFiles";
 import { useDeletePet, usePet } from "@/hooks/usePets";
-import { useMarkVisitComplete, useVisitsByPet } from "@/hooks/useVisits";
+import {
+  useDeleteVisit,
+  useMarkVisitComplete,
+  useVisitsByPet,
+} from "@/hooks/useVisits";
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { Directory, File as FSFile, Paths } from "expo-file-system";
@@ -70,6 +74,7 @@ export default function PetDetailScreen() {
     refetch: refetchVisits,
   } = useVisitsByPet(id);
   const { markComplete } = useMarkVisitComplete();
+  const { remove: removeVisit } = useDeleteVisit();
   const {
     files,
     isLoading: isFilesLoading,
@@ -142,6 +147,25 @@ export default function PetDetailScreen() {
   const handleDeleteFile = async (fileId: string, fileUri: string) => {
     await removeFile(fileId, fileUri);
     refetchFiles();
+  };
+
+  const handleDeleteVisit = (visitId: string) => {
+    const visit = visits.find((v) => v.id === visitId);
+    Alert.alert(
+      "Delete Visit",
+      `Are you sure you want to delete "${visit?.title}"?`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Delete",
+          style: "destructive",
+          onPress: async () => {
+            await removeVisit(visitId);
+            refetchVisits();
+          },
+        },
+      ],
+    );
   };
 
   const handleCompleteVisit = async (visitId: string) => {
@@ -388,6 +412,7 @@ export default function PetDetailScreen() {
                   visit={visit}
                   onPress={() => router.push(`/visits/${visit.id}/edit`)}
                   onComplete={() => handleCompleteVisit(visit.id)}
+                  onDelete={() => handleDeleteVisit(visit.id)}
                 />
               ))}
             </View>
@@ -405,6 +430,7 @@ export default function PetDetailScreen() {
                   key={visit.id}
                   visit={visit}
                   onPress={() => router.push(`/visits/${visit.id}/edit`)}
+                  onDelete={() => handleDeleteVisit(visit.id)}
                 />
               ))}
             </View>

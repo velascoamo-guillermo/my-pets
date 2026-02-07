@@ -1,6 +1,19 @@
-import { View, Text, StyleSheet, Pressable, useColorScheme } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
 import type { VetVisit } from "@/db/schema";
+import { Ionicons } from "@expo/vector-icons";
+import {
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from "react-native";
+import { RectButton } from "react-native-gesture-handler";
+import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
+import Reanimated, {
+  type SharedValue,
+  interpolate,
+  useAnimatedStyle,
+} from "react-native-reanimated";
 
 const colors = {
   light: {
@@ -21,6 +34,7 @@ type VisitCardProps = {
   visit: VetVisit;
   onPress: () => void;
   onComplete?: () => void;
+  onDelete?: () => void;
 };
 
 const TYPE_CONFIG = {
@@ -30,24 +44,53 @@ const TYPE_CONFIG = {
   other: { icon: "ellipsis-horizontal", color: "#9E9E9E" },
 } as const;
 
-export function VisitCard({ visit, onPress, onComplete }: VisitCardProps) {
-  const colorScheme = useColorScheme();
-  const theme = colors[colorScheme ?? "light"];
-  const config = TYPE_CONFIG[visit.type];
+function DeleteAction({
+  drag,
+  onPress,
+}: {
+  drag: SharedValue<number>;
+  onPress: () => void;
+}) {
+  const animatedStyle = useAnimatedStyle(() => {
+    const scale = interpolate(
+      Math.abs(drag.value),
+      [0, 80, 160],
+      [0.4, 1, 1.2],
+      "clamp",
+    );
+    return { transform: [{ scale }] };
+  });
+
+  return (
+    <View style={styles.deleteAction}>
+      <RectButton style={styles.deleteButton} onPress={onPress}>
+        <Reanimated.View style={[styles.deleteCircle, animatedStyle]}>
+          <Ionicons name="trash-outline" size={20} color="#fff" />
+        </Reanimated.View>
+      </RectButton>
+    </View>
+  );
+}
+
+function CardContent({
+  visit,
+  onComplete,
+  theme,
+  config,
+}: {
+  visit: VetVisit;
+  onComplete?: () => void;
+  theme: typeof colors.light;
+  config: (typeof TYPE_CONFIG)[keyof typeof TYPE_CONFIG];
+}) {
   const isUpcoming = new Date(visit.scheduledDate) > new Date();
   const isPast = !isUpcoming && !visit.completed;
 
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: theme.cardBackground },
-        visit.completed && styles.cardCompleted,
-        pressed && styles.cardPressed,
-      ]}
-      onPress={onPress}
-    >
-      <View style={[styles.iconContainer, { backgroundColor: config.color + "20" }]}>
+    <>
+      <View
+        style={[styles.iconContainer, { backgroundColor: config.color + "20" }]}
+      >
         <Ionicons
           name={config.icon as keyof typeof Ionicons.glyphMap}
           size={24}
@@ -55,7 +98,16 @@ export function VisitCard({ visit, onPress, onComplete }: VisitCardProps) {
         />
       </View>
       <View style={styles.content}>
-        <Text style={[styles.title, { color: theme.text }, visit.completed && { textDecorationLine: "line-through", color: theme.textCompleted }]}>
+        <Text
+          style={[
+            styles.title,
+            { color: theme.text },
+            visit.completed && {
+              textDecorationLine: "line-through",
+              color: theme.textCompleted,
+            },
+          ]}
+        >
           {visit.title}
         </Text>
         <Text style={[styles.date, { color: theme.textSecondary }]}>
@@ -89,7 +141,68 @@ export function VisitCard({ visit, onPress, onComplete }: VisitCardProps) {
           <Ionicons name="checkmark" size={20} color="#4CAF50" />
         </Pressable>
       )}
-    </Pressable>
+    </>
+  );
+}
+
+export function VisitCard({
+  visit,
+  onPress,
+  onComplete,
+  onDelete,
+}: VisitCardProps) {
+  const colorScheme = useColorScheme();
+  const theme = colors[colorScheme ?? "light"];
+  const config = TYPE_CONFIG[visit.type];
+
+  if (!onDelete) {
+    return (
+      <Pressable
+        style={({ pressed }) => [
+          styles.card,
+          { backgroundColor: theme.cardBackground },
+          visit.completed && styles.cardCompleted,
+          pressed && styles.cardPressed,
+        ]}
+        onPress={onPress}
+      >
+        <CardContent
+          visit={visit}
+          onComplete={onComplete}
+          theme={theme}
+          config={config}
+        />
+      </Pressable>
+    );
+  }
+
+  return (
+    <ReanimatedSwipeable
+      friction={2}
+      rightThreshold={80}
+      renderRightActions={(_progress, drag) => (
+        <DeleteAction drag={drag} onPress={onDelete} />
+      )}
+      onSwipeableOpen={(direction) => {
+        if (direction === "right") onDelete();
+      }}
+    >
+      <RectButton
+        style={[
+          styles.card,
+          { backgroundColor: theme.cardBackground },
+          visit.completed && styles.cardCompleted,
+        ]}
+        onPress={onPress}
+      >
+        <CardContent
+          visit={visit}
+          onComplete={onComplete}
+          theme={theme}
+          config={config}
+        />
+      </RectButton>
+    </ReanimatedSwipeable>
   );
 }
 
@@ -159,6 +272,25 @@ const styles = StyleSheet.create({
     borderRadius: 18,
     borderWidth: 2,
     borderColor: "#4CAF50",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteAction: {
+    width: 80,
+    marginVertical: 4,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteButton: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  deleteCircle: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FF3B30",
     justifyContent: "center",
     alignItems: "center",
   },

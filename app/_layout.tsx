@@ -5,6 +5,7 @@ import { Ionicons } from "@expo/vector-icons";
 import { Link, Stack } from "expo-router";
 import { useEffect, useRef } from "react";
 import { AppState, Pressable, StyleSheet, useColorScheme } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 const colors = {
   light: {
@@ -29,7 +30,10 @@ function AppContent() {
 
   useEffect(() => {
     const sub = AppState.addEventListener("change", (nextState) => {
-      if (appState.current.match(/inactive|background/) && nextState === "active") {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextState === "active"
+      ) {
         syncWithSupabase().catch(() => {});
       }
       appState.current = nextState;
@@ -77,7 +81,9 @@ const styles = StyleSheet.create({
 export default function RootLayout() {
   return (
     <DatabaseProvider>
-      <AppContent />
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <AppContent />
+      </GestureHandlerRootView>
     </DatabaseProvider>
   );
 }
