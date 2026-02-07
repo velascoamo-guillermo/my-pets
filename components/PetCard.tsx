@@ -1,26 +1,14 @@
-import { View, Text, StyleSheet, Pressable, useColorScheme } from "react-native";
+import { View, Text, StyleSheet, Pressable, useColorScheme, useWindowDimensions } from "react-native";
 import { Image } from "expo-image";
+import { GlassView, isLiquidGlassAvailable } from "expo-glass-effect";
 import { Ionicons } from "@expo/vector-icons";
 import type { Pet } from "@/db/schema";
 
-const colors = {
-  light: {
-    cardBackground: "#ffffff",
-    text: "#333",
-    textSecondary: "#666",
-    placeholder: "#f0f0f0",
-    placeholderIcon: "#ccc",
-    chevron: "#999",
-  },
-  dark: {
-    cardBackground: "#1c1c1e",
-    text: "#ffffff",
-    textSecondary: "#aaaaaa",
-    placeholder: "#2c2c2e",
-    placeholderIcon: "#555",
-    chevron: "#666",
-  },
-};
+const GRID_PADDING = 16;
+const CARD_GAP = 12;
+const NUM_COLUMNS = 2;
+
+const glassAvailable = isLiquidGlassAvailable();
 
 type PetCardProps = {
   pet: Pet;
@@ -29,71 +17,63 @@ type PetCardProps = {
 
 export function PetCard({ pet, onPress }: PetCardProps) {
   const colorScheme = useColorScheme();
-  const theme = colors[colorScheme ?? "light"];
-  const speciesIcon = pet.species === "dog" ? "🐕" : "🐈";
+  const isDark = colorScheme === "dark";
+  const { width } = useWindowDimensions();
+
+  const cardWidth = (width - GRID_PADDING * 2 - CARD_GAP) / NUM_COLUMNS;
+  const cardHeight = cardWidth * 1.25;
+
+  const NameOverlay = glassAvailable ? GlassView : View;
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.card, { backgroundColor: theme.cardBackground }, pressed && styles.cardPressed]}
+      style={({ pressed }) => [
+        styles.card,
+        { width: cardWidth, height: cardHeight, backgroundColor: isDark ? "#1c1c1e" : "#ffffff" },
+        pressed && styles.cardPressed,
+      ]}
       onPress={onPress}
     >
       {pet.imageUri ? (
-        <Image source={{ uri: pet.imageUri }} style={styles.image} />
+        <Image source={{ uri: pet.imageUri }} style={StyleSheet.absoluteFill} contentFit="cover" />
       ) : (
-        <View style={[styles.imagePlaceholder, { backgroundColor: theme.placeholder }]}>
-          <Ionicons name="paw" size={40} color={theme.placeholderIcon} />
+        <View style={[StyleSheet.absoluteFill, { backgroundColor: isDark ? "#2c2c2e" : "#f0f0f0", justifyContent: "center", alignItems: "center" }]}>
+          <Ionicons name="paw" size={56} color={isDark ? "#555" : "#ccc"} />
         </View>
       )}
-      <View style={styles.info}>
-        <Text style={[styles.name, { color: theme.text }]}>{pet.name}</Text>
-        <Text style={[styles.species, { color: theme.textSecondary }]}>
-          {speciesIcon} {pet.species.charAt(0).toUpperCase() + pet.species.slice(1)}
+      <NameOverlay
+        style={[styles.nameContainer, !glassAvailable && styles.nameContainerFallback]}
+      >
+        <Text style={styles.name} numberOfLines={1}>
+          {pet.name}
         </Text>
-      </View>
-      <Ionicons name="chevron-forward" size={20} color={theme.chevron} />
+      </NameOverlay>
     </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
   card: {
-    flexDirection: "row",
-    alignItems: "center",
-    borderRadius: 12,
-    padding: 12,
-    marginHorizontal: 16,
-    marginVertical: 6,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.1,
-    shadowRadius: 2,
-    elevation: 2,
+    borderRadius: 16,
+    overflow: "hidden",
   },
   cardPressed: {
-    opacity: 0.7,
+    opacity: 0.85,
   },
-  image: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
+  nameContainer: {
+    position: "absolute",
+    bottom: 0,
+    left: 0,
+    right: 0,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
   },
-  imagePlaceholder: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  info: {
-    flex: 1,
-    marginLeft: 12,
+  nameContainerFallback: {
+    backgroundColor: "rgba(0,0,0,0.35)",
   },
   name: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  species: {
-    fontSize: 14,
-    marginTop: 2,
+    color: "#ffffff",
+    fontSize: 17,
+    fontWeight: "700",
   },
 });

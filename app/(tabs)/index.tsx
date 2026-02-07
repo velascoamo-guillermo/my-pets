@@ -48,6 +48,8 @@ export default function PetsScreen() {
       <FlatList
         data={pets}
         keyExtractor={(item) => item.id}
+        numColumns={2}
+        columnWrapperStyle={styles.row}
         renderItem={({ item }) => (
           <PetCard
             pet={item}
@@ -86,7 +88,12 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   list: {
+    paddingHorizontal: 16,
     paddingVertical: 8,
+  },
+  row: {
+    justifyContent: "space-between",
+    marginBottom: 12,
   },
   emptyList: {
     flex: 1,
