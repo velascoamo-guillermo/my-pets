@@ -9,6 +9,7 @@ import {
   useColorScheme,
 } from "react-native";
 import { useFocusEffect } from "expo-router";
+import * as Haptics from "expo-haptics";
 import { Ionicons } from "@expo/vector-icons";
 import { getSyncStats, syncWithSupabase } from "@/services/sync";
 import { cancelAllNotifications, getScheduledNotifications } from "@/services/notifications";
@@ -69,6 +70,7 @@ export default function SettingsScreen() {
     try {
       const result = await syncWithSupabase();
       if (result.success) {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
         const pushed = result.pushed.pets + result.pushed.visits + result.pushed.files;
         const pulled = result.pulled.pets + result.pulled.visits + result.pulled.files;
         Alert.alert(
@@ -76,6 +78,7 @@ export default function SettingsScreen() {
           `Pushed ${pushed} and pulled ${pulled} records.`
         );
       } else {
+        Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
         Alert.alert("Sync Failed", result.error ?? "Unknown error");
       }
       loadStats();
@@ -111,7 +114,7 @@ export default function SettingsScreen() {
     : "Never";
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentInsetAdjustmentBehavior="automatic">
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>Sync Status</Text>
         <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>

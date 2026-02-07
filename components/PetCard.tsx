@@ -82,6 +82,7 @@ export function PetCard({ pet, onPress }: PetCardProps) {
 const styles = StyleSheet.create({
   card: {
     borderRadius: 16,
+    borderCurve: "continuous",
     overflow: "hidden",
   },
   cardPressed: {

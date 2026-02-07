@@ -109,6 +109,7 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
         styles.content,
         { paddingBottom: safeArea.bottom },
       ]}
+      contentInsetAdjustmentBehavior="automatic"
     >
       <Controller
         control={control}

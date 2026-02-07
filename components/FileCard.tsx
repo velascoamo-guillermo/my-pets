@@ -103,6 +103,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     borderRadius: 12,
+    borderCurve: "continuous",
     padding: 12,
   },
   cardPressed: {

@@ -103,7 +103,7 @@ export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content}>
+    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
       <Text style={[styles.label, { color: theme.text }]}>Visit Type</Text>
       <Controller
         control={control}

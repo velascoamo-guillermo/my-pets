@@ -50,6 +50,7 @@ export default function PetsScreen() {
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={styles.row}
+        contentInsetAdjustmentBehavior="automatic"
         renderItem={({ item }) => (
           <PetCard
             pet={item}

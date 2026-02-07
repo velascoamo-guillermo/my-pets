@@ -16,6 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { Directory, File as FSFile, Paths } from "expo-file-system";
 import { Image } from "expo-image";
+import * as Haptics from "expo-haptics";
 import {
   Stack,
   useFocusEffect,
@@ -27,7 +28,6 @@ import {
   ActivityIndicator,
   Alert,
   Linking,
-  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -150,6 +150,7 @@ export default function PetDetailScreen() {
   };
 
   const handleDeleteVisit = (visitId: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     const visit = visits.find((v) => v.id === visitId);
     Alert.alert(
       "Delete Visit",
@@ -161,6 +162,7 @@ export default function PetDetailScreen() {
           style: "destructive",
           onPress: async () => {
             await removeVisit(visitId);
+            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
             refetchVisits();
           },
         },
@@ -174,6 +176,7 @@ export default function PetDetailScreen() {
       await cancelNotificationForVisit(visit);
     }
     await markComplete(visitId);
+    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
     refetchVisits();
   };
 
@@ -215,6 +218,7 @@ export default function PetDetailScreen() {
       />
       <ScrollView
         style={[styles.container, { backgroundColor: theme.background }]}
+        contentInsetAdjustmentBehavior="automatic"
       >
         <View
           style={[styles.header, { backgroundColor: theme.cardBackground }]}
@@ -293,7 +297,7 @@ export default function PetDetailScreen() {
                   onPress={() => {
                     const encoded = encodeURIComponent(pet.vetAddress!);
                     const url =
-                      Platform.OS === "ios"
+                      process.env.EXPO_OS === "ios"
                         ? `maps:?q=${encoded}`
                         : `geo:0,0?q=${encoded}`;
                     Linking.openURL(url);
