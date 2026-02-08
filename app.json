@@ -30,6 +30,12 @@
       "predictiveBackGestureEnabled": false,
       "package": "com.guillermo.velasco.amo.mypets"
     },
+    "updates": {
+      "url": "https://u.expo.dev/a3c70412-b6b5-4efb-b9fa-ea03b2ed8da7"
+    },
+    "runtimeVersion": {
+      "policy": "appVersion"
+    },
     "plugins": [
       "expo-router",
       [
