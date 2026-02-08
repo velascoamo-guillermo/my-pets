@@ -1,5 +1,6 @@
 import { useCallback, useMemo } from "react";
 import { Alert } from "react-native";
+import * as Sentry from "@sentry/react-native";
 import * as DocumentPicker from "expo-document-picker";
 import { Directory, File as FSFile, Paths } from "expo-file-system";
 import * as Haptics from "expo-haptics";
@@ -98,8 +99,9 @@ export function usePetDetailScreen() {
         fileSize: asset.size ?? 0,
       });
 
-      syncWithSupabase().catch(() => {});
-    } catch {
+      syncWithSupabase().catch((err) => Sentry.captureException(err));
+    } catch (err) {
+      Sentry.captureException(err);
       Alert.alert("Error", "Failed to add file. Please try again.");
     }
   }, [id, addFileMutation]);

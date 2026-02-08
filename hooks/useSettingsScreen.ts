@@ -1,5 +1,6 @@
 import { useCallback, useState } from "react";
 import { Alert } from "react-native";
+import * as Sentry from "@sentry/react-native";
 import * as Haptics from "expo-haptics";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { getSyncStats, syncWithSupabase } from "@/services/sync";
@@ -55,7 +56,8 @@ export function useSettingsScreen() {
         Alert.alert("Sync Failed", result.error ?? "Unknown error");
       }
       queryClient.invalidateQueries({ queryKey: queryKeys.syncStats });
-    } catch {
+    } catch (err) {
+      Sentry.captureException(err);
       Alert.alert("Sync Failed", "Could not connect to Supabase");
     } finally {
       setIsSyncing(false);

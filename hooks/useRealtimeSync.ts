@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react-native";
 import { supabase } from "@/services/supabase";
 import { syncWithSupabase } from "@/services/sync";
 import { useEffect, useRef } from "react";
@@ -34,7 +35,7 @@ export function useRealtimeSync() {
     function debouncedSync() {
       if (timerRef.current) clearTimeout(timerRef.current);
       timerRef.current = setTimeout(() => {
-        syncWithSupabase().catch(() => {});
+        syncWithSupabase().catch((err) => Sentry.captureException(err));
       }, DEBOUNCE_MS);
     }
 

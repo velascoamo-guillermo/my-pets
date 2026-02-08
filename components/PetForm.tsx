@@ -1,4 +1,5 @@
 import type { Pet } from "@/db/schema";
+import * as Sentry from "@sentry/react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { zodResolver } from "@hookform/resolvers/zod";
 import DateTimePicker from "@react-native-community/datetimepicker";
@@ -97,7 +98,8 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
         vetPhone: data.vetPhone.trim(),
         vetAddress: data.vetAddress.trim(),
       });
-    } catch {
+    } catch (err) {
+      Sentry.captureException(err);
       Alert.alert("Error", "Failed to save pet. Please try again.");
     }
   };

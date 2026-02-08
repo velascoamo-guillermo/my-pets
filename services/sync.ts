@@ -8,6 +8,7 @@ import {
   type VetVisit,
 } from "@/db/schema";
 import { queryClient } from "@/lib/queryClient";
+import * as Sentry from "@sentry/react-native";
 import { eq } from "drizzle-orm";
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { Directory, File as FSFile, Paths } from "expo-file-system";
@@ -265,8 +266,8 @@ async function pushFiles(): Promise<number> {
         .where(eq(petFiles.id, file.id));
 
       pushed++;
-    } catch {
-      // Skip individual file failures, continue with the rest
+    } catch (err) {
+      Sentry.captureException(err, { tags: { operation: "push_file", fileId: file.id } });
     }
   }
 
@@ -479,10 +480,7 @@ async function pullFiles(lastSync: string | null): Promise<{
         });
         pulled++;
       } catch (err) {
-        console.warn(
-          `[Sync] Failed to download file "${remote.name}" (${remote.id}):`,
-          err instanceof Error ? err.message : err,
-        );
+        Sentry.captureException(err, { tags: { operation: "pull_file", fileId: remote.id } });
       }
     }
   }
@@ -501,9 +499,8 @@ export async function pushDeleteToSupabase(
       .from(table)
       .update({ deleted_at: new Date().toISOString() })
       .eq("id", id);
-  } catch {
-    // If push fails, the item is already deleted locally.
-    // It will remain on remote until next cleanup.
+  } catch (err) {
+    Sentry.captureException(err, { tags: { operation: "push_delete", table, itemId: id } });
   }
 }
 
@@ -543,6 +540,7 @@ export async function syncWithSupabase(): Promise<SyncResult> {
     result.success = true;
     queryClient.invalidateQueries();
   } catch (err) {
+    Sentry.captureException(err, { tags: { operation: "sync" } });
     result.error = err instanceof Error ? err.message : "Unknown sync error";
   }
 

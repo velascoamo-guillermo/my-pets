@@ -11,6 +11,26 @@ import { Link, Stack } from "expo-router";
 import { useEffect, useRef } from "react";
 import { AppState, Pressable, StyleSheet, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import * as Sentry from '@sentry/react-native';
+
+Sentry.init({
+  dsn: 'https://8ee0c7dea63d7ee74bda1986f098ede7@o4510851483369472.ingest.de.sentry.io/4510851488809040',
+
+  // Adds more context data to events (IP address, cookies, user, etc.)
+  // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
+  sendDefaultPii: true,
+
+  // Enable Logs
+  enableLogs: true,
+
+  // Configure Session Replay
+  replaysSessionSampleRate: 0.1,
+  replaysOnErrorSampleRate: 1,
+  integrations: [Sentry.mobileReplayIntegration()],
+
+  // uncomment the line below to enable Spotlight (https://spotlightjs.com)
+  // spotlight: __DEV__,
+});
 
 const colors = {
   light: {
@@ -40,12 +60,12 @@ function AppContent() {
         appState.current.match(/inactive|background/) &&
         nextState === "active"
       ) {
-        syncWithSupabase().catch(() => {});
+        syncWithSupabase().catch((err) => Sentry.captureException(err));
       }
       appState.current = nextState;
     });
     // Also sync on initial mount
-    syncWithSupabase().catch(() => {});
+    syncWithSupabase().catch((err) => Sentry.captureException(err));
     return () => sub.remove();
   }, []);
 
@@ -87,7 +107,7 @@ const styles = StyleSheet.create({
   },
 });
 
-export default function RootLayout() {
+export default Sentry.wrap(function RootLayout() {
   return (
     <DatabaseProvider>
       <QueryClientProvider client={queryClient}>
@@ -99,4 +119,4 @@ export default function RootLayout() {
       </QueryClientProvider>
     </DatabaseProvider>
   );
-}
+});

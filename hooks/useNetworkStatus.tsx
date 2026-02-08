@@ -1,3 +1,4 @@
+import * as Sentry from "@sentry/react-native";
 import { syncWithSupabase } from "@/services/sync";
 import NetInfo from "@react-native-community/netinfo";
 import {
@@ -28,7 +29,7 @@ export function NetworkProvider({ children }: { children: ReactNode }) {
 
       // Trigger sync when transitioning from offline → online
       if (connected && !wasConnectedRef.current) {
-        syncWithSupabase().catch(() => {});
+        syncWithSupabase().catch((err) => Sentry.captureException(err));
       }
 
       wasConnectedRef.current = connected;

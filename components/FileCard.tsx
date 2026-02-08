@@ -1,5 +1,6 @@
 import { View, Text, StyleSheet, Pressable, Alert, useColorScheme } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import * as Sentry from "@sentry/react-native";
 import * as Sharing from "expo-sharing";
 import type { PetFile } from "@/db/schema";
 
@@ -55,7 +56,8 @@ export function FileCard({ file, onDelete }: FileCardProps) {
       } else {
         Alert.alert("Error", "Sharing is not available on this device");
       }
-    } catch {
+    } catch (err) {
+      Sentry.captureException(err);
       Alert.alert("Error", "Could not open file");
     }
   };
