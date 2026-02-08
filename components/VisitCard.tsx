@@ -130,6 +130,11 @@ function CardContent({
           </View>
         )}
       </View>
+      {visit.syncStatus === "pending" && (
+        <View style={styles.syncBadge}>
+          <Ionicons name="cloud-upload-outline" size={14} color="#FF9500" />
+        </View>
+      )}
       {!visit.completed && isUpcoming && onComplete && (
         <Pressable
           style={styles.completeButton}
@@ -291,5 +296,14 @@ const styles = StyleSheet.create({
     backgroundColor: "#FF3B30",
     justifyContent: "center",
     alignItems: "center",
+  },
+  syncBadge: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: "rgba(255,149,0,0.15)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 4,
   },
 });

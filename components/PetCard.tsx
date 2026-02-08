@@ -65,6 +65,11 @@ export function PetCard({ pet, onPress }: PetCardProps) {
           <Ionicons name="paw" size={56} color={isDark ? "#555" : "#ccc"} />
         </View>
       )}
+      {pet.syncStatus === "pending" && (
+        <View style={styles.syncBadge}>
+          <Ionicons name="cloud-upload-outline" size={14} color="#fff" />
+        </View>
+      )}
       <NameOverlay
         style={[
           styles.nameContainer,
@@ -103,5 +108,17 @@ const styles = StyleSheet.create({
     color: "#ffffff",
     fontSize: 17,
     fontWeight: "700",
+  },
+  syncBadge: {
+    position: "absolute",
+    top: 8,
+    right: 8,
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: "rgba(255,149,0,0.85)",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 1,
   },
 });

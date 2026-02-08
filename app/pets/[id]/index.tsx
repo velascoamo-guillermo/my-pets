@@ -75,6 +75,8 @@ export default function PetDetailScreen() {
 
   const speciesIcon = pet.species === "dog" ? "\u{1F415}" : "\u{1F408}";
 
+  console.log(files, " files ");
+
   return (
     <>
       <Stack.Screen

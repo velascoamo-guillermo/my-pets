@@ -1,16 +1,16 @@
 import { db } from "@/db/client";
 import {
+  petFiles,
   pets,
   vetVisits,
-  petFiles,
   type Pet,
-  type VetVisit,
   type PetFile,
+  type VetVisit,
 } from "@/db/schema";
+import { queryClient } from "@/lib/queryClient";
 import { eq } from "drizzle-orm";
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
-import { File as FSFile, Paths } from "expo-file-system";
-import { queryClient } from "@/lib/queryClient";
+import { Directory, File as FSFile, Paths } from "expo-file-system";
 import { supabase } from "./supabase";
 
 // --- Sync meta table (key-value store for tracking sync state) ---
@@ -400,36 +400,31 @@ async function pullVisits(lastSync: string | null): Promise<{
 async function downloadFileFromStorage(
   remoteUri: string,
   petId: string,
-  fileName: string
+  fileName: string,
 ): Promise<string> {
-  const dir = `${Paths.document}/pet-files`;
-  const localPath = `${dir}/${petId}-${fileName}`;
-
-  const localFile = new FSFile(localPath);
-  if (localFile.exists) return localPath;
-
-  const dirFile = new FSFile(dir);
-  if (!dirFile.exists) {
-    await dirFile.create({ intermediates: true });
+  const dir = new Directory(Paths.document, "pet-files");
+  if (!dir.exists) {
+    dir.create();
   }
+
+  const localFile = new FSFile(dir, `${petId}-${fileName}`);
+  if (localFile.exists) return localFile.uri;
 
   const response = await fetch(remoteUri);
   const buffer = await response.arrayBuffer();
   localFile.write(new Uint8Array(buffer));
 
-  return localPath;
+  return localFile.uri;
 }
 
 async function pullFiles(lastSync: string | null): Promise<{
   pulled: number;
   deleted: number;
 }> {
-  let query = supabase.from("pet_files").select("*");
-  if (lastSync) {
-    query = query.gt("created_at", lastSync);
-  }
-
-  const { data, error } = await query;
+  // Always fetch all remote files and reconcile against local DB.
+  // Unlike pets/visits, files only have created_at (no updated_at),
+  // so incremental filtering by lastSync can miss files from other devices.
+  const { data, error } = await supabase.from("pet_files").select("*");
   if (error) throw new Error(`Pull files failed: ${error.message}`);
   if (!data) return { pulled: 0, deleted: 0 };
 
@@ -468,7 +463,7 @@ async function pullFiles(lastSync: string | null): Promise<{
         const localPath = await downloadFileFromStorage(
           remote.remote_uri,
           remote.pet_id,
-          remote.name
+          remote.name,
         );
 
         await db.insert(petFiles).values({
@@ -483,8 +478,11 @@ async function pullFiles(lastSync: string | null): Promise<{
           syncStatus: "synced",
         });
         pulled++;
-      } catch {
-        // Skip files that fail to download
+      } catch (err) {
+        console.warn(
+          `[Sync] Failed to download file "${remote.name}" (${remote.id}):`,
+          err instanceof Error ? err.message : err,
+        );
       }
     }
   }
@@ -496,7 +494,7 @@ async function pullFiles(lastSync: string | null): Promise<{
 
 export async function pushDeleteToSupabase(
   table: "pets" | "vet_visits" | "pet_files",
-  id: string
+  id: string,
 ): Promise<void> {
   try {
     await supabase

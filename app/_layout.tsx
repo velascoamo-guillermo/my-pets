@@ -1,9 +1,12 @@
+import { OfflineBanner } from "@/components/OfflineBanner";
 import { DatabaseProvider } from "@/db";
+import { NetworkProvider } from "@/hooks/useNetworkStatus";
 import { useNotificationSetup } from "@/hooks/useNotifications";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { queryClient } from "@/lib/queryClient";
 import { syncWithSupabase } from "@/services/sync";
-import { QueryClientProvider } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Link, Stack } from "expo-router";
 import { useEffect, useRef } from "react";
 import { AppState, Pressable, StyleSheet, useColorScheme } from "react-native";
@@ -26,6 +29,7 @@ const colors = {
 
 function AppContent() {
   useNotificationSetup();
+  useRealtimeSync();
   const colorScheme = useColorScheme();
   const theme = colors[colorScheme ?? "light"];
   const appState = useRef(AppState.currentState);
@@ -46,28 +50,31 @@ function AppContent() {
   }, []);
 
   return (
-    <Stack
-      screenOptions={{
-        headerStyle: { backgroundColor: theme.headerBackground },
-        headerTintColor: theme.text,
-        contentStyle: { backgroundColor: theme.background },
-      }}
-    >
-      <Stack.Screen
-        name="(tabs)"
-        options={{
-          headerTitle: "My Pets",
-          presentation: "modal",
-          headerRight: () => (
-            <Link href="/pets/new" asChild>
-              <Pressable style={styles.headerButton}>
-                <Ionicons name="add" size={28} color={theme.tint} />
-              </Pressable>
-            </Link>
-          ),
+    <>
+      <OfflineBanner />
+      <Stack
+        screenOptions={{
+          headerStyle: { backgroundColor: theme.headerBackground },
+          headerTintColor: theme.text,
+          contentStyle: { backgroundColor: theme.background },
         }}
-      />
-    </Stack>
+      >
+        <Stack.Screen
+          name="(tabs)"
+          options={{
+            headerTitle: "My Pets",
+            presentation: "modal",
+            headerRight: () => (
+              <Link href="/pets/new" asChild>
+                <Pressable style={styles.headerButton}>
+                  <Ionicons name="add" size={28} color={theme.tint} />
+                </Pressable>
+              </Link>
+            ),
+          }}
+        />
+      </Stack>
+    </>
   );
 }
 
@@ -84,9 +91,11 @@ export default function RootLayout() {
   return (
     <DatabaseProvider>
       <QueryClientProvider client={queryClient}>
-        <GestureHandlerRootView style={{ flex: 1 }}>
-          <AppContent />
-        </GestureHandlerRootView>
+        <NetworkProvider>
+          <GestureHandlerRootView style={{ flex: 1 }}>
+            <AppContent />
+          </GestureHandlerRootView>
+        </NetworkProvider>
       </QueryClientProvider>
     </DatabaseProvider>
   );
