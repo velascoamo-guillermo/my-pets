@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "build:dev": "eas build --profile development --platform ios",
-    "build:production": "eas build --profile production --platform ios"
+    "build:production": "eas build --profile production --platform ios",
+    "prepare": "husky"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -20,6 +21,7 @@
     "@react-navigation/elements": "^2.6.3",
     "@react-navigation/native": "^7.1.8",
     "@supabase/supabase-js": "^2.94.0",
+    "@tanstack/react-query": "^5.90.20",
     "drizzle-orm": "^0.45.1",
     "expo": "~54.0.32",
     "expo-constants": "~18.0.13",
@@ -58,6 +60,7 @@
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
+    "husky": "^9.1.7",
     "typescript": "~5.9.2"
   },
   "private": true

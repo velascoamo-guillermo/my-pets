@@ -10,8 +10,8 @@ import {
 import { eq } from "drizzle-orm";
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { File as FSFile, Paths } from "expo-file-system";
+import { queryClient } from "@/lib/queryClient";
 import { supabase } from "./supabase";
-import { syncEvents } from "./syncEvents";
 
 // --- Sync meta table (key-value store for tracking sync state) ---
 
@@ -414,8 +414,8 @@ async function downloadFileFromStorage(
   }
 
   const response = await fetch(remoteUri);
-  const blob = await response.blob();
-  await localFile.write(blob);
+  const buffer = await response.arrayBuffer();
+  localFile.write(new Uint8Array(buffer));
 
   return localPath;
 }
@@ -543,7 +543,7 @@ export async function syncWithSupabase(): Promise<SyncResult> {
 
     await setLastSyncAt(syncStartedAt);
     result.success = true;
-    syncEvents.emit();
+    queryClient.invalidateQueries();
   } catch (err) {
     result.error = err instanceof Error ? err.message : "Unknown sync error";
   }

@@ -1,6 +1,8 @@
 import { DatabaseProvider } from "@/db";
 import { useNotificationSetup } from "@/hooks/useNotifications";
+import { queryClient } from "@/lib/queryClient";
 import { syncWithSupabase } from "@/services/sync";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { Ionicons } from "@expo/vector-icons";
 import { Link, Stack } from "expo-router";
 import { useEffect, useRef } from "react";
@@ -81,9 +83,11 @@ const styles = StyleSheet.create({
 export default function RootLayout() {
   return (
     <DatabaseProvider>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <AppContent />
-      </GestureHandlerRootView>
+      <QueryClientProvider client={queryClient}>
+        <GestureHandlerRootView style={{ flex: 1 }}>
+          <AppContent />
+        </GestureHandlerRootView>
+      </QueryClientProvider>
     </DatabaseProvider>
   );
 }

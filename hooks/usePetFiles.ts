@@ -1,117 +1,59 @@
-import { useCallback, useEffect, useState } from "react";
 import {
   getFilesByPetId,
   createPetFile,
   deletePetFile,
 } from "@/db/repositories/petFiles";
-import { syncEvents } from "@/services/syncEvents";
+import { queryKeys } from "@/lib/queryKeys";
+import type { NewPetFile } from "@/db/schema";
 import { File as FSFile } from "expo-file-system";
-import type { PetFile, NewPetFile } from "@/db/schema";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 
 export function useFilesByPet(petId: string | undefined) {
-  const [files, setFiles] = useState<PetFile[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<Error | null>(null);
-
-  const loadFiles = useCallback(async () => {
-    if (!petId) {
-      setFiles([]);
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      setIsLoading(true);
-      setError(null);
-      const data = await getFilesByPetId(petId);
-      setFiles(data);
-    } catch (err) {
-      setError(
-        err instanceof Error ? err : new Error("Failed to load files")
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [petId]);
-
-  useEffect(() => {
-    loadFiles();
-  }, [loadFiles]);
-
-  useEffect(() => {
-    return syncEvents.subscribe(() => {
-      loadFiles();
-    });
-  }, [loadFiles]);
-
-  return {
-    files,
-    isLoading,
-    error,
-    refetch: loadFiles,
-  };
+  return useQuery({
+    queryKey: queryKeys.files.byPet(petId!),
+    queryFn: () => getFilesByPetId(petId!),
+    enabled: !!petId,
+  });
 }
 
 export function useAddPetFile() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  const addFile = useCallback(
-    async (data: Omit<NewPetFile, "id" | "createdAt">) => {
-      try {
-        setIsLoading(true);
-        setError(null);
-        const file = await createPetFile(data);
-        return file;
-      } catch (err) {
-        const error =
-          err instanceof Error ? err : new Error("Failed to add file");
-        setError(error);
-        throw error;
-      } finally {
-        setIsLoading(false);
-      }
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Omit<NewPetFile, "id" | "createdAt" | "syncStatus">) =>
+      createPetFile(data),
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.files.byPet(variables.petId),
+      });
     },
-    []
-  );
-
-  return {
-    addFile,
-    isLoading,
-    error,
-  };
+  });
 }
 
 export function useDeletePetFile() {
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<Error | null>(null);
-
-  const removeFile = useCallback(async (id: string, fileUri: string) => {
-    try {
-      setIsLoading(true);
-      setError(null);
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({
+      id,
+      fileUri,
+    }: {
+      id: string;
+      fileUri: string;
+      petId: string;
+    }) => {
       try {
         const file = new FSFile(fileUri);
         if (file.exists) {
           file.delete();
         }
       } catch {
-        // File might already be gone, continue with DB deletion
+        // File might already be gone
       }
       await deletePetFile(id);
-    } catch (err) {
-      const error =
-        err instanceof Error ? err : new Error("Failed to delete file");
-      setError(error);
-      throw error;
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  return {
-    removeFile,
-    isLoading,
-    error,
-  };
+    },
+    onSuccess: (_result, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.files.byPet(variables.petId),
+      });
+    },
+  });
 }

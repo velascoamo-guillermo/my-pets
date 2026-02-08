@@ -1,8 +1,12 @@
-import { View, ActivityIndicator, StyleSheet, useColorScheme } from "react-native";
-import { Stack, useRouter, useLocalSearchParams } from "expo-router";
-import { useVisit, useUpdateVisit } from "@/hooks/useVisits";
-import { rescheduleNotificationForVisit } from "@/hooks/useNotifications";
-import { VisitForm, type VisitFormData } from "@/components/VisitForm";
+import { VisitForm } from "@/components/VisitForm";
+import { useEditVisitScreen } from "@/hooks/useEditVisitScreen";
+import { Stack } from "expo-router";
+import {
+  View,
+  ActivityIndicator,
+  StyleSheet,
+  useColorScheme,
+} from "react-native";
 
 const colors = {
   light: {
@@ -18,26 +22,7 @@ const colors = {
 export default function EditVisitScreen() {
   const colorScheme = useColorScheme();
   const theme = colors[colorScheme ?? "light"];
-  const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { visit, isLoading } = useVisit(id);
-  const { update } = useUpdateVisit();
-
-  const handleSubmit = async (data: VisitFormData) => {
-    if (!id || !visit) return;
-
-    const updates = {
-      type: data.type,
-      title: data.title,
-      notes: data.notes || undefined,
-      scheduledDate: data.scheduledDate,
-      reminderDays: data.reminderDays,
-    };
-
-    await update(id, updates);
-    await rescheduleNotificationForVisit(id, updates, visit);
-    router.back();
-  };
+  const { visit, isLoading, handleSubmit } = useEditVisitScreen();
 
   if (isLoading || !visit) {
     return (

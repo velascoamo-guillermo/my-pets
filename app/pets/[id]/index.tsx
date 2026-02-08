@@ -1,33 +1,11 @@
 import { FileCard } from "@/components/FileCard";
 import { VisitCard } from "@/components/VisitCard";
-import { cancelNotificationForVisit } from "@/hooks/useNotifications";
-import {
-  useAddPetFile,
-  useDeletePetFile,
-  useFilesByPet,
-} from "@/hooks/usePetFiles";
-import { useDeletePet, usePet } from "@/hooks/usePets";
-import {
-  useDeleteVisit,
-  useMarkVisitComplete,
-  useVisitsByPet,
-} from "@/hooks/useVisits";
-import { syncWithSupabase } from "@/services/sync";
+import { usePetDetailScreen } from "@/hooks/usePetDetailScreen";
 import { Ionicons } from "@expo/vector-icons";
-import * as DocumentPicker from "expo-document-picker";
-import { Directory, File as FSFile, Paths } from "expo-file-system";
 import { Image } from "expo-image";
-import * as Haptics from "expo-haptics";
-import {
-  Stack,
-  useFocusEffect,
-  useLocalSearchParams,
-  useRouter,
-} from "expo-router";
-import { useCallback } from "react";
+import { Stack } from "expo-router";
 import {
   ActivityIndicator,
-  Alert,
   Linking,
   Pressable,
   ScrollView,
@@ -65,122 +43,24 @@ const colors = {
 export default function PetDetailScreen() {
   const colorScheme = useColorScheme();
   const theme = colors[colorScheme ?? "light"];
-  const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { pet, isLoading: isPetLoading } = usePet(id);
-  const { remove } = useDeletePet();
   const {
-    visits,
-    isLoading: isVisitsLoading,
-    refetch: refetchVisits,
-  } = useVisitsByPet(id);
-  const { markComplete } = useMarkVisitComplete();
-  const { remove: removeVisit } = useDeleteVisit();
-  const {
+    pet,
+    isPetLoading,
+    isVisitsLoading,
     files,
-    isLoading: isFilesLoading,
-    refetch: refetchFiles,
-  } = useFilesByPet(id);
-  const { addFile } = useAddPetFile();
-  const { removeFile } = useDeletePetFile();
-
-  useFocusEffect(
-    useCallback(() => {
-      refetchVisits();
-      refetchFiles();
-    }, [refetchVisits, refetchFiles]),
-  );
-
-  const handleDelete = () => {
-    Alert.alert(
-      "Delete Pet",
-      `Are you sure you want to delete ${pet?.name}? This action cannot be undone.`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            if (!id) return;
-            await remove(id);
-            router.back();
-          },
-        },
-      ],
-    );
-  };
-
-  const handlePickFile = async () => {
-    try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: "*/*",
-        copyToCacheDirectory: true,
-      });
-
-      if (result.canceled || !result.assets?.[0]) return;
-
-      const asset = result.assets[0];
-      const fileName = `${Date.now()}_${asset.name}`;
-
-      const destDir = new Directory(Paths.document, "pet-files");
-      if (!destDir.exists) {
-        destDir.create({ intermediates: true });
-      }
-
-      const sourceFile = new FSFile(asset.uri);
-      const destFile = new FSFile(destDir, fileName);
-      sourceFile.copy(destFile);
-
-      await addFile({
-        petId: id!,
-        name: asset.name,
-        uri: destFile.uri,
-        fileType: asset.mimeType ?? "application/octet-stream",
-        fileSize: asset.size ?? 0,
-      });
-
-      refetchFiles();
-      syncWithSupabase().catch(() => {});
-    } catch {
-      Alert.alert("Error", "Failed to add file. Please try again.");
-    }
-  };
-
-  const handleDeleteFile = async (fileId: string, fileUri: string) => {
-    await removeFile(fileId, fileUri);
-    refetchFiles();
-  };
-
-  const handleDeleteVisit = (visitId: string) => {
-    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
-    const visit = visits.find((v) => v.id === visitId);
-    Alert.alert(
-      "Delete Visit",
-      `Are you sure you want to delete "${visit?.title}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        {
-          text: "Delete",
-          style: "destructive",
-          onPress: async () => {
-            await removeVisit(visitId);
-            Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-            refetchVisits();
-          },
-        },
-      ],
-    );
-  };
-
-  const handleCompleteVisit = async (visitId: string) => {
-    const visit = visits.find((v) => v.id === visitId);
-    if (visit) {
-      await cancelNotificationForVisit(visit);
-    }
-    await markComplete(visitId);
-    Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-    refetchVisits();
-  };
+    isFilesLoading,
+    upcomingVisits,
+    pastVisits,
+    age,
+    handleDelete,
+    handlePickFile,
+    handleDeleteFile,
+    handleDeleteVisit,
+    handleCompleteVisit,
+    handleEditPress,
+    handleAddVisitPress,
+    handleVisitPress,
+  } = usePetDetailScreen();
 
   if (isPetLoading || !pet) {
     return (
@@ -193,15 +73,7 @@ export default function PetDetailScreen() {
     );
   }
 
-  const speciesIcon = pet.species === "dog" ? "🐕" : "🐈";
-  const age = pet.birthDate ? calculateAge(pet.birthDate) : null;
-
-  const upcomingVisits = visits.filter(
-    (v) => !v.completed && new Date(v.scheduledDate) >= new Date(),
-  );
-  const pastVisits = visits.filter(
-    (v) => v.completed || new Date(v.scheduledDate) < new Date(),
-  );
+  const speciesIcon = pet.species === "dog" ? "\u{1F415}" : "\u{1F408}";
 
   return (
     <>
@@ -209,10 +81,7 @@ export default function PetDetailScreen() {
         options={{
           title: pet.name,
           headerRight: () => (
-            <Pressable
-              style={styles.headerButton}
-              onPress={() => router.push(`/pets/${id}/edit`)}
-            >
+            <Pressable style={styles.headerButton} onPress={handleEditPress}>
               <Ionicons name="pencil" size={22} color={theme.tint} />
             </Pressable>
           ),
@@ -377,10 +246,7 @@ export default function PetDetailScreen() {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Upcoming Visits
             </Text>
-            <Pressable
-              style={styles.addButton}
-              onPress={() => router.push(`/pets/${id}/visits/new`)}
-            >
+            <Pressable style={styles.addButton} onPress={handleAddVisitPress}>
               <Ionicons name="add" size={20} color={theme.tint} />
               <Text style={[styles.addButtonText, { color: theme.tint }]}>
                 Add
@@ -416,7 +282,7 @@ export default function PetDetailScreen() {
                 <VisitCard
                   key={visit.id}
                   visit={visit}
-                  onPress={() => router.push(`/visits/${visit.id}/edit`)}
+                  onPress={() => handleVisitPress(visit.id)}
                   onComplete={() => handleCompleteVisit(visit.id)}
                   onDelete={() => handleDeleteVisit(visit.id)}
                 />
@@ -435,7 +301,7 @@ export default function PetDetailScreen() {
                 <VisitCard
                   key={visit.id}
                   visit={visit}
-                  onPress={() => router.push(`/visits/${visit.id}/edit`)}
+                  onPress={() => handleVisitPress(visit.id)}
                   onDelete={() => handleDeleteVisit(visit.id)}
                 />
               ))}
@@ -458,49 +324,17 @@ export default function PetDetailScreen() {
   );
 }
 
-function calculateAge(birthDate: Date): string {
-  const now = new Date();
-  const years = now.getFullYear() - birthDate.getFullYear();
-  const months = now.getMonth() - birthDate.getMonth();
-
-  if (years < 1) {
-    const totalMonths = months >= 0 ? months : 12 + months;
-    return `${totalMonths} month${totalMonths !== 1 ? "s" : ""}`;
-  }
-
-  if (years === 1 && months < 0) {
-    const totalMonths = 12 + months;
-    return `${totalMonths} month${totalMonths !== 1 ? "s" : ""}`;
-  }
-
-  return `${years} year${years !== 1 ? "s" : ""} old`;
-}
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  loading: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  header: {
-    alignItems: "center",
-    paddingVertical: 24,
-    paddingHorizontal: 16,
-  },
+  container: { flex: 1 },
+  loading: { flex: 1, justifyContent: "center", alignItems: "center" },
+  header: { alignItems: "center", paddingVertical: 24, paddingHorizontal: 16 },
   headerButton: {
     width: 36,
     height: 36,
     justifyContent: "center",
     alignItems: "center",
   },
-  image: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-  },
+  image: { width: 120, height: 120, borderRadius: 60 },
   imagePlaceholder: {
     width: 120,
     height: 120,
@@ -508,77 +342,26 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  name: {
-    fontSize: 28,
-    fontWeight: "700",
-    marginTop: 16,
-  },
-  species: {
-    fontSize: 16,
-    marginTop: 4,
-  },
-  age: {
-    fontSize: 14,
-    marginTop: 2,
-  },
-  infoSection: {
-    marginTop: 16,
-    paddingHorizontal: 16,
-  },
+  name: { fontSize: 28, fontWeight: "700", marginTop: 16 },
+  species: { fontSize: 16, marginTop: 4 },
+  age: { fontSize: 14, marginTop: 2 },
+  infoSection: { marginTop: 16, paddingHorizontal: 16 },
   sectionHeader: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
   },
-  sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    marginBottom: 12,
-  },
-  infoCard: {
-    borderRadius: 12,
-    padding: 16,
-  },
-  infoRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 8,
-  },
-  infoLabel: {
-    flex: 1,
-    fontSize: 16,
-    marginLeft: 12,
-  },
-  infoValue: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  addButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  addButtonText: {
-    fontSize: 16,
-    fontWeight: "500",
-  },
-  visitsList: {
-    gap: 4,
-  },
-  emptyVisits: {
-    borderRadius: 12,
-    padding: 24,
-    alignItems: "center",
-  },
-  emptyText: {
-    fontSize: 16,
-    marginTop: 12,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    marginTop: 4,
-    textAlign: "center",
-  },
+  sectionTitle: { fontSize: 18, fontWeight: "600", marginBottom: 12 },
+  infoCard: { borderRadius: 12, padding: 16 },
+  infoRow: { flexDirection: "row", alignItems: "center", paddingVertical: 8 },
+  infoLabel: { flex: 1, fontSize: 16, marginLeft: 12 },
+  infoValue: { fontSize: 16, fontWeight: "500" },
+  addButton: { flexDirection: "row", alignItems: "center", gap: 4 },
+  addButtonText: { fontSize: 16, fontWeight: "500" },
+  visitsList: { gap: 4 },
+  emptyVisits: { borderRadius: 12, padding: 24, alignItems: "center" },
+  emptyText: { fontSize: 16, marginTop: 12 },
+  emptySubtext: { fontSize: 14, marginTop: 4, textAlign: "center" },
   deleteButton: {
     flexDirection: "row",
     alignItems: "center",
@@ -591,9 +374,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: "#FF3B30",
   },
-  deleteButtonText: {
-    color: "#FF3B30",
-    fontSize: 16,
-    fontWeight: "500",
-  },
+  deleteButtonText: { color: "#FF3B30", fontSize: 16, fontWeight: "500" },
 });

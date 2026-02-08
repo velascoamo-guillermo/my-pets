@@ -1,27 +1,10 @@
-import { PetForm, type PetFormData } from "@/components/PetForm";
-import { usePet, useUpdatePet } from "@/hooks/usePets";
-import { Stack, useLocalSearchParams, useRouter } from "expo-router";
+import { PetForm } from "@/components/PetForm";
+import { useEditPetScreen } from "@/hooks/useEditPetScreen";
+import { Stack } from "expo-router";
 import { ActivityIndicator, StyleSheet, View } from "react-native";
 
 export default function EditPetScreen() {
-  const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
-  const { pet, isLoading } = usePet(id);
-  const { update } = useUpdatePet();
-
-  const handleSubmit = async (data: PetFormData) => {
-    if (!id) return;
-    await update(id, {
-      name: data.name,
-      species: data.species,
-      birthDate: data.birthDate ?? undefined,
-      imageUri: data.imageUri ?? undefined,
-      vetName: data.vetName || undefined,
-      vetPhone: data.vetPhone || undefined,
-      vetAddress: data.vetAddress || undefined,
-    });
-    router.back();
-  };
+  const { pet, isLoading, handleSubmit } = useEditPetScreen();
 
   if (isLoading || !pet) {
     return (
@@ -37,7 +20,11 @@ export default function EditPetScreen() {
   return (
     <>
       <Stack.Screen options={{ title: `Edit ${pet.name}` }} />
-      <PetForm initialData={pet} onSubmit={handleSubmit} submitLabel="Save Changes" />
+      <PetForm
+        initialData={pet}
+        onSubmit={handleSubmit}
+        submitLabel="Save Changes"
+      />
     </>
   );
 }

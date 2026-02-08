@@ -1,7 +1,6 @@
 import { PetCard } from "@/components/PetCard";
-import { usePets } from "@/hooks/usePets";
+import { usePetListScreen } from "@/hooks/usePetListScreen";
 import { Ionicons } from "@expo/vector-icons";
-import { useRouter } from "expo-router";
 import {
   ActivityIndicator,
   FlatList,
@@ -30,8 +29,8 @@ const colors = {
 };
 
 export default function PetsScreen() {
-  const router = useRouter();
-  const { pets, isLoading, refetch } = usePets();
+  const { pets, isLoading, isFetching, refetch, handlePetPress } =
+    usePetListScreen();
   const colorScheme = useColorScheme();
   const theme = colors[colorScheme ?? "light"];
 
@@ -52,10 +51,7 @@ export default function PetsScreen() {
         columnWrapperStyle={styles.row}
         contentInsetAdjustmentBehavior="automatic"
         renderItem={({ item }) => (
-          <PetCard
-            pet={item}
-            onPress={() => router.push(`/pets/${item.id}`)}
-          />
+          <PetCard pet={item} onPress={() => handlePetPress(item.id)} />
         )}
         contentContainerStyle={
           pets.length === 0 ? styles.emptyList : styles.list
@@ -72,7 +68,7 @@ export default function PetsScreen() {
           </View>
         }
         refreshControl={
-          <RefreshControl refreshing={isLoading} onRefresh={refetch} />
+          <RefreshControl refreshing={isFetching} onRefresh={refetch} />
         }
       />
     </View>
@@ -80,39 +76,17 @@ export default function PetsScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-  },
-  centered: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  list: {
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-  },
-  row: {
-    justifyContent: "space-between",
-    marginBottom: 12,
-  },
-  emptyList: {
-    flex: 1,
-  },
+  container: { flex: 1 },
+  centered: { flex: 1, justifyContent: "center", alignItems: "center" },
+  list: { paddingHorizontal: 16, paddingVertical: 8 },
+  row: { justifyContent: "space-between", marginBottom: 12 },
+  emptyList: { flex: 1 },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
     padding: 32,
   },
-  emptyText: {
-    fontSize: 20,
-    fontWeight: "600",
-    marginTop: 16,
-  },
-  emptySubtext: {
-    fontSize: 14,
-    marginTop: 8,
-    textAlign: "center",
-  },
+  emptyText: { fontSize: 20, fontWeight: "600", marginTop: 16 },
+  emptySubtext: { fontSize: 14, marginTop: 8, textAlign: "center" },
 });
