@@ -12,6 +12,7 @@ import {
   useMarkVisitComplete,
   useVisitsByPet,
 } from "@/hooks/useVisits";
+import { syncWithSupabase } from "@/services/sync";
 import { Ionicons } from "@expo/vector-icons";
 import * as DocumentPicker from "expo-document-picker";
 import { Directory, File as FSFile, Paths } from "expo-file-system";
@@ -139,6 +140,7 @@ export default function PetDetailScreen() {
       });
 
       refetchFiles();
+      syncWithSupabase().catch(() => {});
     } catch {
       Alert.alert("Error", "Failed to add file. Please try again.");
     }

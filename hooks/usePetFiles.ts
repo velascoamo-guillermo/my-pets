@@ -4,6 +4,7 @@ import {
   createPetFile,
   deletePetFile,
 } from "@/db/repositories/petFiles";
+import { syncEvents } from "@/services/syncEvents";
 import { File as FSFile } from "expo-file-system";
 import type { PetFile, NewPetFile } from "@/db/schema";
 
@@ -35,6 +36,12 @@ export function useFilesByPet(petId: string | undefined) {
 
   useEffect(() => {
     loadFiles();
+  }, [loadFiles]);
+
+  useEffect(() => {
+    return syncEvents.subscribe(() => {
+      loadFiles();
+    });
   }, [loadFiles]);
 
   return {

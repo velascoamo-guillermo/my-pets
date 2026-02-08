@@ -11,6 +11,7 @@ import { eq } from "drizzle-orm";
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { File as FSFile, Paths } from "expo-file-system";
 import { supabase } from "./supabase";
+import { syncEvents } from "./syncEvents";
 
 // --- Sync meta table (key-value store for tracking sync state) ---
 
@@ -153,7 +154,7 @@ async function uploadPetImage(pet: Pet): Promise<string | null> {
   if (!localFile.exists) return pet.imageUri;
 
   const fileName = pet.imageUri.split("/").pop()!;
-  const storagePath = `pet-images/${pet.id}/${fileName}`;
+  const storagePath = `${pet.id}/images/${fileName}`;
   const fileBytes = await localFile.bytes();
 
   const { error } = await supabase.storage
@@ -220,7 +221,7 @@ async function uploadFileToStorage(file: PetFile): Promise<string> {
     throw new Error(`Local file not found: ${file.uri}`);
   }
 
-  const storagePath = `${file.petId}/${file.id}-${file.name}`;
+  const storagePath = `${file.petId}/files/${file.id}-${file.name}`;
   const fileBytes = await localFile.bytes();
 
   const { error } = await supabase.storage
@@ -542,6 +543,7 @@ export async function syncWithSupabase(): Promise<SyncResult> {
 
     await setLastSyncAt(syncStartedAt);
     result.success = true;
+    syncEvents.emit();
   } catch (err) {
     result.error = err instanceof Error ? err.message : "Unknown sync error";
   }
