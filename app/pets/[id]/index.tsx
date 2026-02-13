@@ -247,7 +247,7 @@ export default function PetDetailScreen() {
         <View style={styles.infoSection}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Upcoming Visits
+              Next Appointments
             </Text>
             <Pressable testID="add-visit-button" style={styles.addButton} onPress={handleAddVisitPress}>
               <Ionicons name="add" size={20} color={theme.tint} />
@@ -271,12 +271,12 @@ export default function PetDetailScreen() {
                 color={theme.emptyIcon}
               />
               <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                No upcoming visits
+                No upcoming appointments
               </Text>
               <Text
                 style={[styles.emptySubtext, { color: theme.textTertiary }]}
               >
-                Tap Add to schedule a vaccination or checkup
+                Tap Add to schedule a new appointment
               </Text>
             </View>
           ) : (
@@ -297,7 +297,7 @@ export default function PetDetailScreen() {
         {pastVisits.length > 0 && (
           <View style={styles.infoSection}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Past Visits
+              Clinical History
             </Text>
             <View style={styles.visitsList}>
               {pastVisits.map((visit) => (
