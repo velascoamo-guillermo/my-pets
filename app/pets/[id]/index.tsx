@@ -14,6 +14,7 @@ import {
   useColorScheme,
   View,
 } from "react-native";
+import Reanimated, { LinearTransition } from "react-native-reanimated";
 
 const colors = {
   light: {
@@ -286,17 +287,21 @@ export default function PetDetailScreen() {
               </Text>
             </View>
           ) : (
-            <View style={styles.visitsList}>
-              {upcomingVisits.map((visit) => (
+            <Reanimated.FlatList
+              data={upcomingVisits}
+              keyExtractor={(item) => item.id}
+              scrollEnabled={false}
+              itemLayoutAnimation={LinearTransition}
+              renderItem={({ item: visit }) => (
                 <VisitCard
-                  key={visit.id}
                   visit={visit}
                   onPress={() => handleVisitPress(visit.id)}
                   onComplete={() => handleCompleteVisit(visit.id)}
                   onDelete={(close) => handleDeleteVisit(visit.id, close)}
                 />
-              ))}
-            </View>
+              )}
+              style={styles.visitsList}
+            />
           )}
         </View>
 
