@@ -56,24 +56,36 @@ function DeleteAction({
   drag: SharedValue<number>;
   onPress: () => void;
 }) {
-  const animatedStyle = useAnimatedStyle(() => {
-    const scale = interpolate(
+  const circleStyle = useAnimatedStyle(() => {
+    const absDrag = Math.abs(drag.value);
+    const scale = interpolate(absDrag, [0, 80], [0.4, 1], "clamp");
+    const width = interpolate(absDrag, [80, 200], [48, 160], "clamp");
+    const borderRadius = interpolate(absDrag, [80, 200], [24, 24], "clamp");
+    return {
+      transform: [{ scale }],
+      width,
+      borderRadius,
+    };
+  });
+
+  const containerStyle = useAnimatedStyle(() => {
+    const width = interpolate(
       Math.abs(drag.value),
-      [0, 80, 160],
-      [0.4, 1, 1.2],
+      [0, 80, 200],
+      [80, 80, 200],
       "clamp",
     );
-    return { transform: [{ scale }] };
+    return { width };
   });
 
   return (
-    <View style={styles.deleteAction}>
+    <Reanimated.View style={[styles.deleteAction, containerStyle]}>
       <RectButton style={styles.deleteButton} onPress={onPress}>
-        <Reanimated.View style={[styles.deleteCircle, animatedStyle]}>
+        <Reanimated.View style={[styles.deleteCircle, circleStyle]}>
           <Ionicons name="trash-outline" size={20} color="#fff" />
         </Reanimated.View>
       </RectButton>
-    </View>
+    </Reanimated.View>
   );
 }
 

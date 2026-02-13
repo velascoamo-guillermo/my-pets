@@ -75,15 +75,17 @@ export default function PetDetailScreen() {
 
   const speciesIcon = pet.species === "dog" ? "\u{1F415}" : "\u{1F408}";
 
-  console.log(files, " files ");
-
   return (
     <>
       <Stack.Screen
         options={{
           title: pet.name,
           headerRight: () => (
-            <Pressable testID="edit-pet-button" style={styles.headerButton} onPress={handleEditPress}>
+            <Pressable
+              testID="edit-pet-button"
+              style={styles.headerButton}
+              onPress={handleEditPress}
+            >
               <Ionicons name="pencil" size={22} color={theme.tint} />
             </Pressable>
           ),
@@ -249,7 +251,11 @@ export default function PetDetailScreen() {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Next Appointments
             </Text>
-            <Pressable testID="add-visit-button" style={styles.addButton} onPress={handleAddVisitPress}>
+            <Pressable
+              testID="add-visit-button"
+              style={styles.addButton}
+              onPress={handleAddVisitPress}
+            >
               <Ionicons name="add" size={20} color={theme.tint} />
               <Text style={[styles.addButtonText, { color: theme.tint }]}>
                 Add
