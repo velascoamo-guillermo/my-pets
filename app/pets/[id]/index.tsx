@@ -293,7 +293,7 @@ export default function PetDetailScreen() {
                   visit={visit}
                   onPress={() => handleVisitPress(visit.id)}
                   onComplete={() => handleCompleteVisit(visit.id)}
-                  onDelete={() => handleDeleteVisit(visit.id)}
+                  onDelete={(close) => handleDeleteVisit(visit.id, close)}
                 />
               ))}
             </View>
@@ -311,7 +311,7 @@ export default function PetDetailScreen() {
                   key={visit.id}
                   visit={visit}
                   onPress={() => handleVisitPress(visit.id)}
-                  onDelete={() => handleDeleteVisit(visit.id)}
+                  onDelete={(close) => handleDeleteVisit(visit.id, close)}
                 />
               ))}
             </View>

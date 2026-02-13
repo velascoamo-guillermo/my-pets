@@ -114,14 +114,14 @@ export function usePetDetailScreen() {
   );
 
   const handleDeleteVisit = useCallback(
-    (visitId: string) => {
+    (visitId: string, close?: () => void) => {
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
       const visit = visits.find((v) => v.id === visitId);
       Alert.alert(
         "Delete Visit",
         `Are you sure you want to delete "${visit?.title}"?`,
         [
-          { text: "Cancel", style: "cancel" },
+          { text: "Cancel", style: "cancel", onPress: close },
           {
             text: "Delete",
             style: "destructive",

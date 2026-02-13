@@ -1,5 +1,6 @@
 import type { VetVisit } from "@/db/schema";
 import { Ionicons } from "@expo/vector-icons";
+import { useRef, useCallback } from "react";
 import {
   Pressable,
   StyleSheet,
@@ -7,6 +8,7 @@ import {
   View,
   useColorScheme,
 } from "react-native";
+import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
 import {
   Gesture,
   GestureDetector,
@@ -16,7 +18,9 @@ import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeabl
 import Reanimated, {
   type SharedValue,
   interpolate,
+  useAnimatedReaction,
   useAnimatedStyle,
+  useSharedValue,
 } from "react-native-reanimated";
 import { scheduleOnRN } from "react-native-worklets";
 
@@ -39,7 +43,7 @@ type VisitCardProps = {
   visit: VetVisit;
   onPress: () => void;
   onComplete?: () => void;
-  onDelete?: () => void;
+  onDelete?: (close: () => void) => void;
 };
 
 const TYPE_CONFIG = {
@@ -56,36 +60,37 @@ function DeleteAction({
   drag: SharedValue<number>;
   onPress: () => void;
 }) {
+  const triggered = useSharedValue(false);
+
+  useAnimatedReaction(
+    () => Math.abs(drag.value),
+    (absDrag) => {
+      if (absDrag > 280 && !triggered.value) {
+        triggered.value = true;
+        scheduleOnRN(onPress);
+      }
+      if (absDrag < 40) {
+        triggered.value = false;
+      }
+    },
+  );
+
   const circleStyle = useAnimatedStyle(() => {
     const absDrag = Math.abs(drag.value);
     const scale = interpolate(absDrag, [0, 80], [0.4, 1], "clamp");
-    const width = interpolate(absDrag, [80, 200], [48, 160], "clamp");
-    const borderRadius = interpolate(absDrag, [80, 200], [24, 24], "clamp");
+    const width = interpolate(absDrag, [80, 200], [48, 160], "extend");
     return {
       transform: [{ scale }],
-      width,
-      borderRadius,
+      width: Math.max(48, width),
     };
   });
 
-  const containerStyle = useAnimatedStyle(() => {
-    const width = interpolate(
-      Math.abs(drag.value),
-      [0, 80, 200],
-      [80, 80, 200],
-      "clamp",
-    );
-    return { width };
-  });
-
   return (
-    <Reanimated.View style={[styles.deleteAction, containerStyle]}>
-      <RectButton style={styles.deleteButton} onPress={onPress}>
-        <Reanimated.View style={[styles.deleteCircle, circleStyle]}>
-          <Ionicons name="trash-outline" size={20} color="#fff" />
-        </Reanimated.View>
-      </RectButton>
-    </Reanimated.View>
+    <RectButton style={styles.deleteAction} onPress={onPress}>
+      <Reanimated.View style={[styles.deleteCircle, circleStyle]}>
+        <Ionicons name="trash-outline" size={20} color="#fff" />
+      </Reanimated.View>
+    </RectButton>
   );
 }
 
@@ -176,6 +181,12 @@ export function VisitCard({
   const colorScheme = useColorScheme();
   const theme = colors[colorScheme ?? "light"];
   const config = TYPE_CONFIG[visit.type];
+  const swipeableRef = useRef<SwipeableMethods>(null);
+
+  const handleDelete = useCallback(() => {
+    const close = () => swipeableRef.current?.close();
+    onDelete?.(close);
+  }, [onDelete]);
 
   if (!onDelete) {
     return (
@@ -204,14 +215,14 @@ export function VisitCard({
 
   return (
     <ReanimatedSwipeable
-      friction={2}
+      ref={swipeableRef}
+      friction={1.5}
       rightThreshold={80}
+      overshootRight
       renderRightActions={(_progress, drag) => (
-        <DeleteAction drag={drag} onPress={onDelete} />
+        <DeleteAction drag={drag} onPress={handleDelete} />
       )}
-      onSwipeableOpen={(direction) => {
-        if (direction === "right") onDelete();
-      }}
+      onSwipeableWillOpen={() => {}}
     >
       <GestureDetector gesture={tap}>
         <View
@@ -300,21 +311,15 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   deleteAction: {
-    width: 80,
-    marginVertical: 4,
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  deleteButton: {
     flex: 1,
     justifyContent: "center",
-    alignItems: "center",
+    alignItems: "flex-end",
+    paddingRight: 16,
+    marginVertical: 4,
   },
   deleteCircle: {
-    width: 48,
     height: 48,
     borderRadius: 24,
-    borderCurve: "continuous",
     backgroundColor: "#FF3B30",
     justifyContent: "center",
     alignItems: "center",
