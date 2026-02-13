@@ -160,7 +160,7 @@ export function usePetDetailScreen() {
 
   const handleVisitPress = useCallback(
     (visitId: string) => {
-      router.push(`/visits/${visitId}/edit`);
+      router.push(`/visits/${visitId}`);
     },
     [router],
   );

@@ -7,13 +7,18 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { RectButton } from "react-native-gesture-handler";
+import {
+  Gesture,
+  GestureDetector,
+  RectButton,
+} from "react-native-gesture-handler";
 import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
 import Reanimated, {
   type SharedValue,
   interpolate,
   useAnimatedStyle,
 } from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 const colors = {
   light: {
@@ -181,6 +186,10 @@ export function VisitCard({
     );
   }
 
+  const tap = Gesture.Tap().onEnd(() => {
+    scheduleOnRN(onPress);
+  });
+
   return (
     <ReanimatedSwipeable
       friction={2}
@@ -192,21 +201,22 @@ export function VisitCard({
         if (direction === "right") onDelete();
       }}
     >
-      <RectButton
-        style={[
-          styles.card,
-          { backgroundColor: theme.cardBackground },
-          visit.completed && styles.cardCompleted,
-        ]}
-        onPress={onPress}
-      >
-        <CardContent
-          visit={visit}
-          onComplete={onComplete}
-          theme={theme}
-          config={config}
-        />
-      </RectButton>
+      <GestureDetector gesture={tap}>
+        <View
+          style={[
+            styles.card,
+            { backgroundColor: theme.cardBackground },
+            visit.completed && styles.cardCompleted,
+          ]}
+        >
+          <CardContent
+            visit={visit}
+            onComplete={onComplete}
+            theme={theme}
+            config={config}
+          />
+        </View>
+      </GestureDetector>
     </ReanimatedSwipeable>
   );
 }
