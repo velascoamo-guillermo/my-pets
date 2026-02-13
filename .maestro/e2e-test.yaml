@@ -1,0 +1,34 @@
+appId: com.guillermo.velasco.amo.mypets
+---
+- launchApp
+
+- assertVisible:
+    id: "pet-list"
+
+# 1. Create a test pet
+- runFlow:
+    file: flows/01-create-pet.yaml
+
+# 2. Create a visit on that pet
+- runFlow:
+    file: flows/02-create-visit.yaml
+
+# Relaunch to get back to pet list
+- launchApp
+
+- assertVisible:
+    id: "pet-list"
+
+# 3. Verify pet detail screen
+- runFlow:
+    file: flows/03-pet-detail.yaml
+
+# Relaunch to get back to pet list
+- launchApp
+
+- assertVisible:
+    id: "pet-list"
+
+# 4. Cleanup: delete the test pet
+- runFlow:
+    file: flows/04-delete-pet.yaml

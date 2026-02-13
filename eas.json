@@ -19,6 +19,15 @@
       "ios": {
         "resourceClass": "m-medium"
       }
+    },
+    "e2e": {
+      "env": {
+        "SENTRY_DISABLE_AUTO_UPLOAD": "true"
+      },
+      "ios": {
+        "simulator": true
+      },
+      "channel": "development"
     }
   },
   "submit": {

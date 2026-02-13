@@ -1,0 +1,30 @@
+appId: com.guillermo.velasco.amo.mypets
+---
+# Tap the test pet card
+- tapOn:
+    text: "Test Pet"
+
+# Wait for detail screen to load
+- extendedWaitUntil:
+    visible:
+      id: "pet-detail-screen"
+    timeout: 5000
+
+# Scroll all the way to the delete button
+- scrollUntilVisible:
+    element:
+      id: "delete-pet-button"
+    timeout: 10000
+
+# Tap delete
+- tapOn:
+    id: "delete-pet-button"
+
+# Confirm deletion in the alert
+- tapOn: "Delete"
+
+# Verify we're back on the pet list
+- extendedWaitUntil:
+    visible:
+      id: "pet-list"
+    timeout: 5000

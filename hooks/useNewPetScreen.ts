@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useRouter } from "expo-router";
 import { useCreatePet } from "@/hooks/usePets";
-import type { PetFormData } from "@/components/PetForm";
+import type { PetFormData } from "@/lib/schemas/petForm";
 
 export function useNewPetScreen() {
   const router = useRouter();

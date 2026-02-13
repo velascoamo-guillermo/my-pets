@@ -2,7 +2,7 @@ import { useCallback } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { useVisit, useUpdateVisit } from "@/hooks/useVisits";
 import { rescheduleNotificationForVisit } from "@/hooks/useNotifications";
-import type { VisitFormData } from "@/components/VisitForm";
+import type { VisitFormData } from "@/lib/schemas/visitForm";
 
 export function useEditVisitScreen() {
   const router = useRouter();

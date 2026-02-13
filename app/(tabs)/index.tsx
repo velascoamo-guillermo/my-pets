@@ -45,6 +45,7 @@ export default function PetsScreen() {
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <FlatList
+        testID="pet-list"
         data={pets}
         keyExtractor={(item) => item.id}
         numColumns={2}

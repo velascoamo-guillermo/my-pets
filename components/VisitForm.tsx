@@ -15,7 +15,7 @@ import {
   View,
   useColorScheme,
 } from "react-native";
-import { z } from "zod";
+import { visitFormSchema, type VisitFormData } from "@/lib/schemas/visitForm";
 
 const colors = {
   light: {
@@ -40,15 +40,6 @@ const colors = {
   },
 };
 
-const visitFormSchema = z.object({
-  type: z.enum(["vaccination", "checkup", "emergency", "other"]),
-  title: z.string().min(1, "Please enter a title for this visit"),
-  notes: z.string(),
-  scheduledDate: z.date(),
-  reminderDays: z.number(),
-});
-
-export type VisitFormData = z.infer<typeof visitFormSchema>;
 
 type VisitFormProps = {
   initialData?: VetVisit;
@@ -114,6 +105,7 @@ export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps
           <View style={styles.typeContainer}>
             {VISIT_TYPES.map((item) => (
               <Pressable
+                testID={`visit-type-${item.value}`}
                 key={item.value}
                 style={[
                   styles.typeButton,
@@ -148,6 +140,7 @@ export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps
         name="title"
         render={({ field: { onChange, value } }) => (
           <TextInput
+            testID="visit-title-input"
             style={[
               styles.input,
               {
@@ -278,6 +271,7 @@ export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps
       />
 
       <Pressable
+        testID="visit-submit"
         style={[styles.submitButton, { backgroundColor: theme.tint }, isSubmitting && styles.submitButtonDisabled]}
         onPress={handleSubmit(onFormSubmit)}
         disabled={isSubmitting}

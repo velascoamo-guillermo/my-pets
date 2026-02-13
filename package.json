@@ -11,7 +11,10 @@
     "lint": "expo lint",
     "build:dev": "eas build --profile development --platform ios",
     "build:production": "eas build --profile production --platform ios",
-    "prepare": "husky"
+    "prepare": "husky",
+    "test": "jest",
+    "build:e2e": "eas build --profile e2e --platform ios --local --output build-e2e.tar.gz && tar -xzf build-e2e.tar.gz && xcrun simctl install booted MyPets.app && rm build-e2e.tar.gz",
+    "test:e2e": "maestro test .maestro/e2e-test.yaml"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
@@ -60,11 +63,22 @@
     "zod": "^4.3.6"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/react": "~19.1.0",
     "eslint": "^9.25.0",
     "eslint-config-expo": "~10.0.0",
     "husky": "^9.1.7",
+    "jest-expo": "~54.0.17",
     "typescript": "~5.9.2"
+  },
+  "jest": {
+    "preset": "jest-expo",
+    "transformIgnorePatterns": [
+      "node_modules/(?!((jest-)?react-native|@react-native(-community)?)|expo(nent)?|@expo(nent)?/.*|@expo-google-fonts/.*|react-navigation|@react-navigation/.*|@sentry/react-native|@supabase/.*|drizzle-orm)"
+    ],
+    "moduleNameMapper": {
+      "^@/(.*)$": "<rootDir>/$1"
+    }
   },
   "private": true
 }

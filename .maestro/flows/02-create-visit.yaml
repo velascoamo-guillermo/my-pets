@@ -1,0 +1,40 @@
+appId: com.guillermo.velasco.amo.mypets
+---
+# Tap the test pet card
+- tapOn:
+    text: "Test Pet"
+
+# Wait for detail screen to load
+- extendedWaitUntil:
+    visible:
+      id: "pet-detail-screen"
+    timeout: 5000
+
+# Scroll to and tap add visit
+- scrollUntilVisible:
+    element:
+      id: "add-visit-button"
+    timeout: 3000
+
+- tapOn:
+    id: "add-visit-button"
+
+# Select visit type
+- tapOn:
+    id: "visit-type-vaccination"
+
+# Enter title
+- tapOn:
+    id: "visit-title-input"
+- inputText: "Annual vaccination"
+
+# Dismiss keyboard before tapping submit
+- hideKeyboard
+
+# Submit and wait for modal to dismiss
+- tapOn:
+    id: "visit-submit"
+
+# Verify the visit form is gone
+- assertNotVisible:
+    id: "visit-submit"

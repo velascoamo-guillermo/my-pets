@@ -34,6 +34,8 @@ export function PetCard({ pet, onPress }: PetCardProps) {
 
   return (
     <Pressable
+      testID={`pet-card-${pet.id}`}
+      accessibilityLabel={pet.name}
       style={({ pressed }) => [
         styles.card,
         {

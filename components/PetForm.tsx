@@ -19,7 +19,7 @@ import {
   View,
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
-import { z } from "zod";
+import { petFormSchema, type PetFormData } from "@/lib/schemas/petForm";
 
 const colors = {
   light: {
@@ -48,17 +48,6 @@ const colors = {
   },
 };
 
-const petFormSchema = z.object({
-  name: z.string().min(1, "Please enter a name for your pet"),
-  species: z.enum(["dog", "cat"]),
-  birthDate: z.date().nullable(),
-  imageUri: z.string().nullable(),
-  vetName: z.string(),
-  vetPhone: z.string(),
-  vetAddress: z.string(),
-});
-
-export type PetFormData = z.infer<typeof petFormSchema>;
 
 type PetFormProps = {
   initialData?: Pet;
@@ -184,6 +173,7 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
                 color: theme.text,
               },
             ]}
+            testID="pet-name-input"
             value={value}
             onChangeText={onChange}
             placeholder="Enter pet name"
@@ -213,6 +203,7 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
                   backgroundColor: theme.tintBackground,
                 },
               ]}
+              testID="species-dog"
               onPress={() => onChange("dog")}
             >
               <Text style={styles.speciesEmoji}>🐕</Text>
@@ -235,6 +226,7 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
                   backgroundColor: theme.tintBackground,
                 },
               ]}
+              testID="species-cat"
               onPress={() => onChange("cat")}
             >
               <Text style={styles.speciesEmoji}>🐈</Text>
@@ -381,6 +373,7 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
       />
 
       <Pressable
+        testID="pet-submit"
         style={[
           styles.submitButton,
           { backgroundColor: theme.tint },

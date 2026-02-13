@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import { usePet, useUpdatePet } from "@/hooks/usePets";
-import type { PetFormData } from "@/components/PetForm";
+import type { PetFormData } from "@/lib/schemas/petForm";
 
 export function useEditPetScreen() {
   const router = useRouter();

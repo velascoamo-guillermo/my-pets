@@ -86,7 +86,7 @@ function AppContent() {
             presentation: "modal",
             headerRight: () => (
               <Link href="/pets/new" asChild>
-                <Pressable style={styles.headerButton}>
+                <Pressable testID="add-pet-button" style={styles.headerButton}>
                   <Ionicons name="add" size={28} color={theme.tint} />
                 </Pressable>
               </Link>

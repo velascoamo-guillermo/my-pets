@@ -1,0 +1,31 @@
+appId: com.guillermo.velasco.amo.mypets
+---
+# Tap the add button in the header
+- tapOn:
+    id: "add-pet-button"
+
+# Fill in the pet name
+- tapOn:
+    id: "pet-name-input"
+- inputText: "Test Pet"
+
+# Dismiss keyboard before scrolling
+- hideKeyboard
+
+# Select dog species
+- tapOn:
+    id: "species-dog"
+
+# Scroll to submit button and tap
+- scrollUntilVisible:
+    element:
+      id: "pet-submit"
+    timeout: 3000
+- tapOn:
+    id: "pet-submit"
+
+# Wait for navigation back to list and verify pet card appears
+- extendedWaitUntil:
+    visible:
+      id: "pet-card-.*"
+    timeout: 10000

@@ -83,13 +83,14 @@ export default function PetDetailScreen() {
         options={{
           title: pet.name,
           headerRight: () => (
-            <Pressable style={styles.headerButton} onPress={handleEditPress}>
+            <Pressable testID="edit-pet-button" style={styles.headerButton} onPress={handleEditPress}>
               <Ionicons name="pencil" size={22} color={theme.tint} />
             </Pressable>
           ),
         }}
       />
       <ScrollView
+        testID="pet-detail-screen"
         style={[styles.container, { backgroundColor: theme.background }]}
         contentInsetAdjustmentBehavior="automatic"
       >
@@ -248,7 +249,7 @@ export default function PetDetailScreen() {
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Upcoming Visits
             </Text>
-            <Pressable style={styles.addButton} onPress={handleAddVisitPress}>
+            <Pressable testID="add-visit-button" style={styles.addButton} onPress={handleAddVisitPress}>
               <Ionicons name="add" size={20} color={theme.tint} />
               <Text style={[styles.addButtonText, { color: theme.tint }]}>
                 Add
@@ -312,6 +313,7 @@ export default function PetDetailScreen() {
         )}
 
         <Pressable
+          testID="delete-pet-button"
           style={[
             styles.deleteButton,
             { backgroundColor: theme.cardBackground },
