@@ -48,6 +48,9 @@ export const petFiles = sqliteTable("pet_files", {
   petId: text("pet_id")
     .notNull()
     .references(() => pets.id, { onDelete: "cascade" }),
+  visitId: text("visit_id").references(() => vetVisits.id, {
+    onDelete: "cascade",
+  }),
   name: text("name").notNull(),
   uri: text("uri").notNull(),
   remoteUri: text("remote_uri"),
@@ -67,3 +70,45 @@ export type VetVisit = typeof vetVisits.$inferSelect;
 export type NewVetVisit = typeof vetVisits.$inferInsert;
 export type PetFile = typeof petFiles.$inferSelect;
 export type NewPetFile = typeof petFiles.$inferInsert;
+
+export const fileAnalyses = sqliteTable("file_analyses", {
+  id: text("id").primaryKey(),
+  fileId: text("file_id")
+    .notNull()
+    .references(() => petFiles.id, { onDelete: "cascade" }),
+  petId: text("pet_id")
+    .notNull()
+    .references(() => pets.id, { onDelete: "cascade" }),
+  visitId: text("visit_id").references(() => vetVisits.id, {
+    onDelete: "cascade",
+  }),
+  status: text("status", {
+    enum: ["pending", "processing", "completed", "failed"],
+  })
+    .notNull()
+    .default("pending"),
+  labValues: text("lab_values"),
+  summary: text("summary"),
+  interpretation: text("interpretation"),
+  errorMessage: text("error_message"),
+  analyzedAt: integer("analyzed_at", { mode: "timestamp" }),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+  updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
+  syncStatus: text("sync_status", {
+    enum: ["synced", "pending", "conflict"],
+  })
+    .notNull()
+    .default("pending"),
+});
+
+export type FileAnalysis = typeof fileAnalyses.$inferSelect;
+export type NewFileAnalysis = typeof fileAnalyses.$inferInsert;
+
+export type LabValue = {
+  name: string;
+  value: string;
+  unit: string;
+  referenceRange: string;
+  status: "normal" | "high" | "low" | "critical";
+  category?: string;
+};

@@ -1,27 +1,55 @@
-import { View, Text, StyleSheet, Pressable, Alert, useColorScheme } from "react-native";
+import { useAnalysisByFile } from "@/hooks/useFileAnalyses";
+import type { PetFile } from "@/db/schema";
 import { Ionicons } from "@expo/vector-icons";
 import * as Sentry from "@sentry/react-native";
 import * as Sharing from "expo-sharing";
-import type { PetFile } from "@/db/schema";
+import { useRouter } from "expo-router";
+import { useRef, useCallback } from "react";
+import {
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from "react-native";
+import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
+import {
+  Gesture,
+  GestureDetector,
+  RectButton,
+} from "react-native-gesture-handler";
+import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
+import Reanimated, {
+  type SharedValue,
+  interpolate,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 const colors = {
   light: {
     cardBackground: "#ffffff",
     text: "#333",
     textSecondary: "#666",
-    danger: "#FF3B30",
+    tint: "#007AFF",
+    success: "#4CAF50",
   },
   dark: {
     cardBackground: "#1c1c1e",
     text: "#ffffff",
     textSecondary: "#aaaaaa",
-    danger: "#FF453A",
+    tint: "#0A84FF",
+    success: "#32D74B",
   },
 };
 
 type FileCardProps = {
   file: PetFile;
-  onDelete: () => void;
+  onDelete: (close: () => void) => void;
+  onAnalyze?: () => void;
 };
 
 function getFileIcon(fileType: string): keyof typeof Ionicons.glyphMap {
@@ -42,13 +70,171 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function FileCard({ file, onDelete }: FileCardProps) {
-  const colorScheme = useColorScheme();
-  const theme = colors[colorScheme ?? "light"];
+function DeleteAction({
+  drag,
+  onPress,
+}: {
+  drag: SharedValue<number>;
+  onPress: () => void;
+}) {
+  const triggered = useSharedValue(false);
+
+  useAnimatedReaction(
+    () => Math.abs(drag.value),
+    (absDrag) => {
+      if (absDrag > 280 && !triggered.value) {
+        triggered.value = true;
+        scheduleOnRN(onPress);
+      }
+      if (absDrag < 40) {
+        triggered.value = false;
+      }
+    },
+  );
+
+  const circleStyle = useAnimatedStyle(() => {
+    const absDrag = Math.abs(drag.value);
+    const scale = interpolate(absDrag, [0, 80], [0.4, 1], "clamp");
+    const width = interpolate(absDrag, [80, 200], [48, 160], "extend");
+    return {
+      transform: [{ scale }],
+      width: Math.max(48, width),
+    };
+  });
+
+  return (
+    <RectButton style={styles.deleteAction} onPress={onPress}>
+      <Reanimated.View style={[styles.deleteCircle, circleStyle]}>
+        <Ionicons name="trash-outline" size={20} color="#fff" />
+      </Reanimated.View>
+    </RectButton>
+  );
+}
+
+// Blocks the parent card's tap gesture so chip presses don't also open the PDF
+function GestureBlocker({ children }: { children: React.ReactNode }) {
+  const tap = Gesture.Tap();
+  return <GestureDetector gesture={tap}>{children}</GestureDetector>;
+}
+
+function CardContent({
+  file,
+  theme,
+  onAnalyze,
+}: {
+  file: PetFile;
+  theme: (typeof colors)["light"];
+  onAnalyze?: () => void;
+}) {
+  const router = useRouter();
   const icon = getFileIcon(file.fileType);
   const iconColor = getFileIconColor(file.fileType);
 
-  const handleOpen = async () => {
+  const isPdf = file.fileType.includes("pdf");
+  const { data: analysis } = useAnalysisByFile(isPdf ? file.id : undefined);
+  const hasAnalysis = analysis?.status === "completed";
+  const canAnalyze = isPdf && !!onAnalyze && !!file.remoteUri;
+
+  const handleAnalyzePress = () => {
+    if (!file.remoteUri) {
+      Alert.alert(
+        "Sync Required",
+        "This file needs to be synced before it can be analyzed.",
+      );
+      return;
+    }
+    onAnalyze?.();
+  };
+
+  const handleViewAnalysis = () => {
+    if (analysis) {
+      router.push(`/analyses/${analysis.id}`);
+    }
+  };
+
+  return (
+    <>
+      <View
+        style={[styles.iconContainer, { backgroundColor: iconColor + "20" }]}
+      >
+        <Ionicons name={icon} size={24} color={iconColor} />
+      </View>
+      <View style={styles.content}>
+        <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
+          {file.name}
+        </Text>
+        <Text style={[styles.meta, { color: theme.textSecondary }]}>
+          {formatFileSize(file.fileSize)} ·{" "}
+          {file.createdAt.toLocaleDateString()}
+        </Text>
+        {hasAnalysis && (
+          <GestureBlocker>
+            <Pressable
+              style={styles.analysisIndicator}
+              onPress={handleViewAnalysis}
+            >
+              <Ionicons name="analytics" size={14} color={theme.success} />
+              <Text style={[styles.analysisText, { color: theme.success }]}>
+                View results
+              </Text>
+            </Pressable>
+          </GestureBlocker>
+        )}
+      </View>
+
+      {canAnalyze && !hasAnalysis && (
+        <GestureBlocker>
+          <Pressable
+            style={[styles.analyzeChip, { backgroundColor: theme.tint + "15" }]}
+            onPress={handleAnalyzePress}
+          >
+            <Ionicons name="sparkles" size={14} color={theme.tint} />
+            <Text style={[styles.analyzeChipText, { color: theme.tint }]}>
+              Analyze
+            </Text>
+          </Pressable>
+        </GestureBlocker>
+      )}
+
+      {hasAnalysis && (
+        <GestureBlocker>
+          <Pressable
+            style={[styles.analyzeChip, { backgroundColor: theme.success + "15" }]}
+            onPress={handleViewAnalysis}
+          >
+            <Ionicons name="checkmark-circle" size={14} color={theme.success} />
+            <Text style={[styles.analyzeChipText, { color: theme.success }]}>
+              Results
+            </Text>
+          </Pressable>
+        </GestureBlocker>
+      )}
+    </>
+  );
+}
+
+export function FileCard({
+  file,
+  onDelete,
+  onAnalyze,
+}: FileCardProps) {
+  const colorScheme = useColorScheme();
+  const theme = colors[colorScheme ?? "light"];
+  const swipeableRef = useRef<SwipeableMethods>(null);
+
+  const handleDelete = useCallback(() => {
+    const close = () => swipeableRef.current?.close();
+    onDelete(close);
+  }, [onDelete]);
+
+  const router = useRouter();
+
+  const handleOpen = useCallback(async () => {
+    const isPdf = file.fileType.includes("pdf");
+    if (isPdf) {
+      router.push(`/pdf-viewer/${file.id}` as any);
+      return;
+    }
     try {
       const isAvailable = await Sharing.isAvailableAsync();
       if (isAvailable) {
@@ -60,43 +246,35 @@ export function FileCard({ file, onDelete }: FileCardProps) {
       Sentry.captureException(err);
       Alert.alert("Error", "Could not open file");
     }
-  };
+  }, [file.fileType, file.id, file.uri, router]);
 
-  const handleDelete = () => {
-    Alert.alert(
-      "Delete File",
-      `Are you sure you want to delete "${file.name}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: onDelete },
-      ]
-    );
-  };
+  const tap = Gesture.Tap().onEnd(() => {
+    scheduleOnRN(handleOpen);
+  });
 
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: theme.cardBackground },
-        pressed && styles.cardPressed,
-      ]}
-      onPress={handleOpen}
+    <ReanimatedSwipeable
+      ref={swipeableRef}
+      friction={1.5}
+      rightThreshold={80}
+      overshootRight
+      renderRightActions={(_progress, drag) => (
+        <DeleteAction drag={drag} onPress={handleDelete} />
+      )}
+      onSwipeableWillOpen={() => {}}
     >
-      <View style={[styles.iconContainer, { backgroundColor: iconColor + "20" }]}>
-        <Ionicons name={icon} size={24} color={iconColor} />
-      </View>
-      <View style={styles.content}>
-        <Text style={[styles.name, { color: theme.text }]} numberOfLines={1}>
-          {file.name}
-        </Text>
-        <Text style={[styles.meta, { color: theme.textSecondary }]}>
-          {formatFileSize(file.fileSize)} · {file.createdAt.toLocaleDateString()}
-        </Text>
-      </View>
-      <Pressable style={styles.deleteButton} onPress={handleDelete}>
-        <Ionicons name="trash-outline" size={18} color={theme.danger} />
-      </Pressable>
-    </Pressable>
+      <GestureDetector gesture={tap}>
+        <View
+          style={[styles.card, { backgroundColor: theme.cardBackground }]}
+        >
+          <CardContent
+            file={file}
+            theme={theme}
+            onAnalyze={onAnalyze}
+          />
+        </View>
+      </GestureDetector>
+    </ReanimatedSwipeable>
   );
 }
 
@@ -107,9 +285,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderCurve: "continuous",
     padding: 12,
-  },
-  cardPressed: {
-    opacity: 0.7,
   },
   iconContainer: {
     width: 44,
@@ -130,10 +305,39 @@ const styles = StyleSheet.create({
     fontSize: 13,
     marginTop: 2,
   },
-  deleteButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  analysisIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  analysisText: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  analyzeChip: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderCurve: "continuous",
+  },
+  analyzeChipText: {
+    fontSize: 12,
+    fontWeight: "600",
+  },
+  deleteAction: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "flex-end",
+    paddingRight: 16,
+  },
+  deleteCircle: {
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FF3B30",
     justifyContent: "center",
     alignItems: "center",
   },

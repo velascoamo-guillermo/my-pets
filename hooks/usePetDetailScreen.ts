@@ -5,6 +5,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { Directory, File as FSFile, Paths } from "expo-file-system";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useAnalyzePdf } from "@/hooks/useFileAnalyses";
 import { cancelNotificationForVisit } from "@/hooks/useNotifications";
 import {
   useAddPetFile,
@@ -17,6 +18,7 @@ import {
   useMarkVisitComplete,
   useVisitsByPet,
 } from "@/hooks/useVisits";
+import { calculateAge } from "@/lib/petAge";
 import { syncWithSupabase } from "@/services/sync";
 
 export function usePetDetailScreen() {
@@ -32,6 +34,7 @@ export function usePetDetailScreen() {
   const deleteVisitMutation = useDeleteVisit();
   const addFileMutation = useAddPetFile();
   const deleteFileMutation = useDeletePetFile();
+  const analyzePdfMutation = useAnalyzePdf();
 
   const upcomingVisits = useMemo(
     () =>
@@ -107,8 +110,29 @@ export function usePetDetailScreen() {
   }, [id, addFileMutation]);
 
   const handleDeleteFile = useCallback(
-    async (fileId: string, fileUri: string) => {
-      await deleteFileMutation.mutateAsync({ id: fileId, fileUri, petId: id! });
+    (fileId: string, fileUri: string, close: () => void) => {
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Alert.alert(
+        "Delete File",
+        "Are you sure you want to delete this file?",
+        [
+          { text: "Cancel", style: "cancel", onPress: close },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              await deleteFileMutation.mutateAsync({
+                id: fileId,
+                fileUri,
+                petId: id!,
+              });
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+              );
+            },
+          },
+        ],
+      );
     },
     [id, deleteFileMutation],
   );
@@ -165,6 +189,23 @@ export function usePetDetailScreen() {
     [router],
   );
 
+  const handleAnalyzeFile = useCallback(
+    (fileId: string, fileUrl: string) => {
+      if (!pet) return;
+      analyzePdfMutation.mutate({
+        fileId,
+        fileUrl,
+        petId: id!,
+        petSpecies: pet.species,
+        petAge: age ?? undefined,
+        onPendingCreated: (analysisId) => {
+          router.push(`/analyzing/${analysisId}`);
+        },
+      });
+    },
+    [pet, id, age, analyzePdfMutation, router],
+  );
+
   return {
     pet,
     isPetLoading,
@@ -177,28 +218,11 @@ export function usePetDetailScreen() {
     handleDelete,
     handlePickFile,
     handleDeleteFile,
+    handleAnalyzeFile,
     handleDeleteVisit,
     handleCompleteVisit,
     handleEditPress,
     handleAddVisitPress,
     handleVisitPress,
   };
-}
-
-function calculateAge(birthDate: Date): string {
-  const now = new Date();
-  const years = now.getFullYear() - birthDate.getFullYear();
-  const months = now.getMonth() - birthDate.getMonth();
-
-  if (years < 1) {
-    const totalMonths = months >= 0 ? months : 12 + months;
-    return `${totalMonths} month${totalMonths !== 1 ? "s" : ""}`;
-  }
-
-  if (years === 1 && months < 0) {
-    const totalMonths = 12 + months;
-    return `${totalMonths} month${totalMonths !== 1 ? "s" : ""}`;
-  }
-
-  return `${years} year${years !== 1 ? "s" : ""} old`;
 }

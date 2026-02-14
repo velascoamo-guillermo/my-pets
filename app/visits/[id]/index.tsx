@@ -1,3 +1,4 @@
+import { FileCard } from "@/components/FileCard";
 import { useVisitDetailScreen } from "@/hooks/useVisitDetailScreen";
 import { Ionicons } from "@expo/vector-icons";
 import { Stack } from "expo-router";
@@ -43,11 +44,16 @@ export default function VisitDetailScreen() {
   const {
     visit,
     pet,
+    files,
     isLoading,
+    isFilesLoading,
     handleEdit,
     handleComplete,
     handleDelete,
     handlePetPress,
+    handlePickFile,
+    handleDeleteFile,
+    handleAnalyzeFile,
   } = useVisitDetailScreen();
 
   if (isLoading || !visit) {
@@ -225,6 +231,64 @@ export default function VisitDetailScreen() {
           </View>
         ) : null}
 
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              Files
+            </Text>
+            <Pressable style={styles.addButton} onPress={handlePickFile}>
+              <Ionicons name="add" size={20} color={theme.tint} />
+              <Text style={[styles.addButtonText, { color: theme.tint }]}>
+                Add
+              </Text>
+            </Pressable>
+          </View>
+          {isFilesLoading ? (
+            <ActivityIndicator size="small" color={theme.tint} />
+          ) : files.length === 0 ? (
+            <View
+              style={[
+                styles.emptyFiles,
+                { backgroundColor: theme.cardBackground },
+              ]}
+            >
+              <Ionicons
+                name="document-outline"
+                size={32}
+                color={theme.textTertiary}
+              />
+              <Text
+                style={[styles.emptyFilesText, { color: theme.textSecondary }]}
+              >
+                No files yet
+              </Text>
+              <Text
+                style={[
+                  styles.emptyFilesSubtext,
+                  { color: theme.textTertiary },
+                ]}
+              >
+                Tap Add to attach documents
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.filesList}>
+              {files.map((file) => (
+                <FileCard
+                  key={file.id}
+                  file={file}
+                  onDelete={(close) => handleDeleteFile(file.id, file.uri, close)}
+                  onAnalyze={
+                    file.remoteUri
+                      ? () => handleAnalyzeFile(file.id, file.remoteUri!)
+                      : undefined
+                  }
+                />
+              ))}
+            </View>
+          )}
+        </View>
+
         <View style={styles.actions}>
           {!visit.completed && (
             <Pressable
@@ -321,6 +385,17 @@ const styles = StyleSheet.create({
     fontWeight: "600",
     marginBottom: 12,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+  },
+  addButton: { flexDirection: "row", alignItems: "center", gap: 4 },
+  addButtonText: { fontSize: 16, fontWeight: "500" },
+  filesList: { gap: 4 },
+  emptyFiles: { borderRadius: 12, padding: 24, alignItems: "center" },
+  emptyFilesText: { fontSize: 16, marginTop: 12 },
+  emptyFilesSubtext: { fontSize: 14, marginTop: 4, textAlign: "center" },
   infoCard: {
     borderRadius: 12,
     padding: 16,

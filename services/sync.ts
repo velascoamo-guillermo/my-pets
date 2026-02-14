@@ -1,8 +1,10 @@
 import { db } from "@/db/client";
 import {
+  fileAnalyses,
   petFiles,
   pets,
   vetVisits,
+  type FileAnalysis,
   type Pet,
   type PetFile,
   type VetVisit,
@@ -25,9 +27,9 @@ export const syncMeta = sqliteTable("sync_meta", {
 
 export type SyncResult = {
   success: boolean;
-  pushed: { pets: number; visits: number; files: number };
-  pulled: { pets: number; visits: number; files: number };
-  deleted: { pets: number; visits: number; files: number };
+  pushed: { pets: number; visits: number; files: number; analyses: number };
+  pulled: { pets: number; visits: number; files: number; analyses: number };
+  deleted: { pets: number; visits: number; files: number; analyses: number };
   error?: string;
 };
 
@@ -488,10 +490,133 @@ async function pullFiles(lastSync: string | null): Promise<{
   return { pulled, deleted };
 }
 
+// --- Analyses sync ---
+
+function analysisToRemote(analysis: FileAnalysis) {
+  return {
+    id: analysis.id,
+    file_id: analysis.fileId,
+    pet_id: analysis.petId,
+    visit_id: analysis.visitId,
+    status: analysis.status,
+    lab_values: analysis.labValues ? JSON.parse(analysis.labValues) : null,
+    summary: analysis.summary,
+    interpretation: analysis.interpretation,
+    error_message: analysis.errorMessage,
+    analyzed_at: analysis.analyzedAt?.toISOString() ?? null,
+    created_at: analysis.createdAt.toISOString(),
+    updated_at: analysis.updatedAt.toISOString(),
+  };
+}
+
+async function getPendingAnalyses(): Promise<FileAnalysis[]> {
+  return db
+    .select()
+    .from(fileAnalyses)
+    .where(eq(fileAnalyses.syncStatus, "pending"))
+    .all();
+}
+
+async function pushAnalyses(): Promise<number> {
+  const pending = await getPendingAnalyses();
+  if (pending.length === 0) return 0;
+
+  let pushed = 0;
+  for (const analysis of pending) {
+    try {
+      const { error } = await supabase
+        .from("file_analyses")
+        .upsert(analysisToRemote(analysis), { onConflict: "id" });
+
+      if (error) throw error;
+
+      await db
+        .update(fileAnalyses)
+        .set({ syncStatus: "synced" })
+        .where(eq(fileAnalyses.id, analysis.id));
+
+      pushed++;
+    } catch (err) {
+      Sentry.captureException(err, {
+        tags: { operation: "push_analysis", analysisId: analysis.id },
+      });
+    }
+  }
+
+  return pushed;
+}
+
+async function pullAnalyses(lastSync: string | null): Promise<{
+  pulled: number;
+  deleted: number;
+}> {
+  let query = supabase.from("file_analyses").select("*");
+  if (lastSync) {
+    query = query.gt("updated_at", lastSync);
+  }
+
+  const { data, error } = await query;
+  if (error) throw new Error(`Pull analyses failed: ${error.message}`);
+  if (!data) return { pulled: 0, deleted: 0 };
+
+  let pulled = 0;
+  let deleted = 0;
+
+  for (const remote of data) {
+    if (remote.deleted_at) {
+      await db.delete(fileAnalyses).where(eq(fileAnalyses.id, remote.id));
+      deleted++;
+      continue;
+    }
+
+    const existing = await db
+      .select()
+      .from(fileAnalyses)
+      .where(eq(fileAnalyses.id, remote.id))
+      .limit(1);
+
+    const localData = {
+      id: remote.id,
+      fileId: remote.file_id,
+      petId: remote.pet_id,
+      visitId: remote.visit_id,
+      status: remote.status as
+        | "pending"
+        | "processing"
+        | "completed"
+        | "failed",
+      labValues: remote.lab_values ? JSON.stringify(remote.lab_values) : null,
+      summary: remote.summary,
+      interpretation: remote.interpretation,
+      errorMessage: remote.error_message,
+      analyzedAt: remote.analyzed_at ? new Date(remote.analyzed_at) : null,
+      createdAt: new Date(remote.created_at),
+      updatedAt: new Date(remote.updated_at),
+      syncStatus: "synced" as const,
+    };
+
+    if (existing.length === 0) {
+      await db.insert(fileAnalyses).values(localData);
+      pulled++;
+    } else {
+      const local = existing[0];
+      if (new Date(remote.updated_at) > local.updatedAt) {
+        await db
+          .update(fileAnalyses)
+          .set(localData)
+          .where(eq(fileAnalyses.id, remote.id));
+        pulled++;
+      }
+    }
+  }
+
+  return { pulled, deleted };
+}
+
 // --- Delete sync: push local deletes to Supabase ---
 
 export async function pushDeleteToSupabase(
-  table: "pets" | "vet_visits" | "pet_files",
+  table: "pets" | "vet_visits" | "pet_files" | "file_analyses",
   id: string,
 ): Promise<void> {
   try {
@@ -509,9 +634,9 @@ export async function pushDeleteToSupabase(
 export async function syncWithSupabase(): Promise<SyncResult> {
   const result: SyncResult = {
     success: false,
-    pushed: { pets: 0, visits: 0, files: 0 },
-    pulled: { pets: 0, visits: 0, files: 0 },
-    deleted: { pets: 0, visits: 0, files: 0 },
+    pushed: { pets: 0, visits: 0, files: 0, analyses: 0 },
+    pulled: { pets: 0, visits: 0, files: 0, analyses: 0 },
+    deleted: { pets: 0, visits: 0, files: 0, analyses: 0 },
   };
 
   try {
@@ -522,6 +647,7 @@ export async function syncWithSupabase(): Promise<SyncResult> {
     result.pushed.pets = await pushPets();
     result.pushed.visits = await pushVisits();
     result.pushed.files = await pushFiles();
+    result.pushed.analyses = await pushAnalyses();
 
     // Then pull (pets before visits due to FK constraint)
     const pulledPets = await pullPets(lastSync);
@@ -535,6 +661,10 @@ export async function syncWithSupabase(): Promise<SyncResult> {
     const pulledFiles = await pullFiles(lastSync);
     result.pulled.files = pulledFiles.pulled;
     result.deleted.files = pulledFiles.deleted;
+
+    const pulledAnalyses = await pullAnalyses(lastSync);
+    result.pulled.analyses = pulledAnalyses.pulled;
+    result.deleted.analyses = pulledAnalyses.deleted;
 
     await setLastSyncAt(syncStartedAt);
     result.success = true;

@@ -1,14 +1,25 @@
 import { useCallback } from "react";
 import { Alert } from "react-native";
+import * as Sentry from "@sentry/react-native";
+import * as DocumentPicker from "expo-document-picker";
+import { Directory, File as FSFile, Paths } from "expo-file-system";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useAnalyzePdf } from "@/hooks/useFileAnalyses";
 import { cancelNotificationForVisit } from "@/hooks/useNotifications";
+import { calculateAge } from "@/lib/petAge";
+import {
+  useAddPetFile,
+  useDeletePetFile,
+  useFilesByVisit,
+} from "@/hooks/usePetFiles";
 import { usePet } from "@/hooks/usePets";
 import {
   useVisit,
   useMarkVisitComplete,
   useDeleteVisit,
 } from "@/hooks/useVisits";
+import { syncWithSupabase } from "@/services/sync";
 
 export function useVisitDetailScreen() {
   const router = useRouter();
@@ -16,9 +27,13 @@ export function useVisitDetailScreen() {
 
   const { data: visit, isLoading: isVisitLoading } = useVisit(id);
   const { data: pet } = usePet(visit?.petId);
+  const { data: files = [], isLoading: isFilesLoading } = useFilesByVisit(id);
 
   const markCompleteMutation = useMarkVisitComplete();
   const deleteVisitMutation = useDeleteVisit();
+  const addFileMutation = useAddPetFile();
+  const deleteFileMutation = useDeletePetFile();
+  const analyzePdfMutation = useAnalyzePdf();
 
   const handleEdit = useCallback(() => {
     router.push(`/visits/${id}/edit`);
@@ -60,13 +75,102 @@ export function useVisitDetailScreen() {
     router.push(`/pets/${visit.petId}`);
   }, [visit?.petId, router]);
 
+  const handlePickFile = useCallback(async () => {
+    if (!visit) return;
+    try {
+      const result = await DocumentPicker.getDocumentAsync({
+        type: "*/*",
+        copyToCacheDirectory: true,
+      });
+      if (result.canceled || !result.assets?.[0]) return;
+
+      const asset = result.assets[0];
+      const fileName = `${Date.now()}_${asset.name}`;
+      const destDir = new Directory(Paths.document, "pet-files");
+      if (!destDir.exists) {
+        destDir.create({ intermediates: true });
+      }
+      const sourceFile = new FSFile(asset.uri);
+      const destFile = new FSFile(destDir, fileName);
+      sourceFile.copy(destFile);
+
+      await addFileMutation.mutateAsync({
+        petId: visit.petId,
+        visitId: id,
+        name: asset.name,
+        uri: destFile.uri,
+        fileType: asset.mimeType ?? "application/octet-stream",
+        fileSize: asset.size ?? 0,
+      });
+
+      syncWithSupabase().catch((err) => Sentry.captureException(err));
+    } catch (err) {
+      Sentry.captureException(err);
+      Alert.alert("Error", "Failed to add file. Please try again.");
+    }
+  }, [visit, id, addFileMutation]);
+
+  const handleDeleteFile = useCallback(
+    (fileId: string, fileUri: string, close: () => void) => {
+      if (!visit) return;
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Alert.alert(
+        "Delete File",
+        "Are you sure you want to delete this file?",
+        [
+          { text: "Cancel", style: "cancel", onPress: close },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              await deleteFileMutation.mutateAsync({
+                id: fileId,
+                fileUri,
+                petId: visit.petId,
+                visitId: id,
+              });
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+              );
+            },
+          },
+        ],
+      );
+    },
+    [visit, id, deleteFileMutation],
+  );
+
+  const handleAnalyzeFile = useCallback(
+    (fileId: string, fileUrl: string) => {
+      if (!visit) return;
+      const petAge = pet?.birthDate ? calculateAge(pet.birthDate) : undefined;
+      analyzePdfMutation.mutate({
+        fileId,
+        fileUrl,
+        petId: visit.petId,
+        visitId: id,
+        petSpecies: pet?.species,
+        petAge,
+        onPendingCreated: (analysisId) => {
+          router.push(`/analyzing/${analysisId}`);
+        },
+      });
+    },
+    [visit, id, pet?.species, pet?.birthDate, analyzePdfMutation, router],
+  );
+
   return {
     visit,
     pet,
+    files,
     isLoading: isVisitLoading,
+    isFilesLoading,
     handleEdit,
     handleComplete,
     handleDelete,
     handlePetPress,
+    handlePickFile,
+    handleDeleteFile,
+    handleAnalyzeFile,
   };
 }

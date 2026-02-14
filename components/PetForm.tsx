@@ -11,13 +11,13 @@ import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   useColorScheme,
   View,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { petFormSchema, type PetFormData } from "@/lib/schemas/petForm";
 
@@ -94,13 +94,14 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
   };
 
   return (
-    <ScrollView
+    <KeyboardAwareScrollView
       style={[styles.container, { backgroundColor: theme.background }]}
       contentContainerStyle={[
         styles.content,
         { paddingBottom: safeArea.bottom },
       ]}
       contentInsetAdjustmentBehavior="automatic"
+      bottomOffset={20}
     >
       <Controller
         control={control}
@@ -386,7 +387,7 @@ export function PetForm({ initialData, onSubmit, submitLabel }: PetFormProps) {
           {isSubmitting ? "Saving..." : submitLabel}
         </Text>
       </Pressable>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 
