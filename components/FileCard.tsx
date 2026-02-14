@@ -203,7 +203,14 @@ export function FileCard({
     onDelete(close);
   }, [onDelete]);
 
+  const router = useRouter();
+
   const handleOpen = useCallback(async () => {
+    const isPdf = file.fileType.includes("pdf");
+    if (isPdf) {
+      router.push(`/pdf-viewer/${file.id}` as any);
+      return;
+    }
     try {
       const isAvailable = await Sharing.isAvailableAsync();
       if (isAvailable) {
@@ -215,7 +222,7 @@ export function FileCard({
       Sentry.captureException(err);
       Alert.alert("Error", "Could not open file");
     }
-  }, [file.uri]);
+  }, [file.fileType, file.id, file.uri, router]);
 
   const tap = Gesture.Tap().onEnd(() => {
     scheduleOnRN(handleOpen);

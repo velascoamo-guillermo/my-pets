@@ -96,6 +96,13 @@ function AppContent() {
           }}
         />
         <Stack.Screen
+          name="pdf-viewer/[id]"
+          options={{
+            presentation: "modal",
+            headerTitle: "PDF",
+          }}
+        />
+        <Stack.Screen
           name="analyzing/[id]"
           options={{
             presentation: "formSheet",
