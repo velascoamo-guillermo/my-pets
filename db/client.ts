@@ -59,6 +59,16 @@ export async function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_pet_files_pet_id ON pet_files(pet_id);
   `);
 
+  // Migration: add visit_id column to pet_files
+  const columns = expoDb.getAllSync<{ name: string }>(
+    "PRAGMA table_info(pet_files)"
+  );
+  if (!columns.some((c) => c.name === "visit_id")) {
+    expoDb.execSync(
+      "ALTER TABLE pet_files ADD COLUMN visit_id TEXT REFERENCES vet_visits(id) ON DELETE CASCADE"
+    );
+  }
+
   // Sync meta table for tracking last sync timestamp
   expoDb.execSync(`
     CREATE TABLE IF NOT EXISTS sync_meta (

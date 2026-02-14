@@ -13,6 +13,7 @@ export const queryKeys = {
   },
   files: {
     byPet: (petId: string) => ["files", { petId }] as const,
+    byVisit: (visitId: string) => ["files", { visitId }] as const,
   },
   syncStats: ["syncStats"] as const,
 } as const;

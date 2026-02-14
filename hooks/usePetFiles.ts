@@ -1,5 +1,6 @@
 import {
   getFilesByPetId,
+  getFilesByVisitId,
   createPetFile,
   deletePetFile,
 } from "@/db/repositories/petFiles";
@@ -16,6 +17,14 @@ export function useFilesByPet(petId: string | undefined) {
   });
 }
 
+export function useFilesByVisit(visitId: string | undefined) {
+  return useQuery({
+    queryKey: queryKeys.files.byVisit(visitId!),
+    queryFn: () => getFilesByVisitId(visitId!),
+    enabled: !!visitId,
+  });
+}
+
 export function useAddPetFile() {
   const queryClient = useQueryClient();
   return useMutation({
@@ -25,6 +34,11 @@ export function useAddPetFile() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.files.byPet(variables.petId),
       });
+      if (variables.visitId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.files.byVisit(variables.visitId),
+        });
+      }
     },
   });
 }
@@ -39,6 +53,7 @@ export function useDeletePetFile() {
       id: string;
       fileUri: string;
       petId: string;
+      visitId?: string;
     }) => {
       try {
         const file = new FSFile(fileUri);
@@ -54,6 +69,11 @@ export function useDeletePetFile() {
       queryClient.invalidateQueries({
         queryKey: queryKeys.files.byPet(variables.petId),
       });
+      if (variables.visitId) {
+        queryClient.invalidateQueries({
+          queryKey: queryKeys.files.byVisit(variables.visitId),
+        });
+      }
     },
   });
 }

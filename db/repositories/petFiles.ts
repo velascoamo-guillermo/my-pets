@@ -13,6 +13,15 @@ export async function getFilesByPetId(petId: string): Promise<PetFile[]> {
     .all();
 }
 
+export async function getFilesByVisitId(visitId: string): Promise<PetFile[]> {
+  return db
+    .select()
+    .from(petFiles)
+    .where(eq(petFiles.visitId, visitId))
+    .orderBy(desc(petFiles.createdAt))
+    .all();
+}
+
 export async function getFileById(id: string): Promise<PetFile | undefined> {
   const results = await db
     .select()

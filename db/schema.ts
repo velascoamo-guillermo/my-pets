@@ -48,6 +48,9 @@ export const petFiles = sqliteTable("pet_files", {
   petId: text("pet_id")
     .notNull()
     .references(() => pets.id, { onDelete: "cascade" }),
+  visitId: text("visit_id").references(() => vetVisits.id, {
+    onDelete: "cascade",
+  }),
   name: text("name").notNull(),
   uri: text("uri").notNull(),
   remoteUri: text("remote_uri"),

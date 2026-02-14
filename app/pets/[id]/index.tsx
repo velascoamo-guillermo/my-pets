@@ -202,54 +202,6 @@ export default function PetDetailScreen() {
         <View style={styles.infoSection}>
           <View style={styles.sectionHeader}>
             <Text style={[styles.sectionTitle, { color: theme.text }]}>
-              Files
-            </Text>
-            <Pressable style={styles.addButton} onPress={handlePickFile}>
-              <Ionicons name="add" size={20} color={theme.tint} />
-              <Text style={[styles.addButtonText, { color: theme.tint }]}>
-                Add
-              </Text>
-            </Pressable>
-          </View>
-          {isFilesLoading ? (
-            <ActivityIndicator size="small" color={theme.tint} />
-          ) : files.length === 0 ? (
-            <View
-              style={[
-                styles.emptyVisits,
-                { backgroundColor: theme.cardBackground },
-              ]}
-            >
-              <Ionicons
-                name="document-outline"
-                size={32}
-                color={theme.emptyIcon}
-              />
-              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
-                No files yet
-              </Text>
-              <Text
-                style={[styles.emptySubtext, { color: theme.textTertiary }]}
-              >
-                Tap Add to upload documents or PDFs
-              </Text>
-            </View>
-          ) : (
-            <View style={styles.visitsList}>
-              {files.map((file) => (
-                <FileCard
-                  key={file.id}
-                  file={file}
-                  onDelete={() => handleDeleteFile(file.id, file.uri)}
-                />
-              ))}
-            </View>
-          )}
-        </View>
-
-        <View style={styles.infoSection}>
-          <View style={styles.sectionHeader}>
-            <Text style={[styles.sectionTitle, { color: theme.text }]}>
               Next Appointments
             </Text>
             <Pressable
@@ -322,6 +274,54 @@ export default function PetDetailScreen() {
             </View>
           </View>
         )}
+
+        <View style={styles.infoSection}>
+          <View style={styles.sectionHeader}>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              Files
+            </Text>
+            <Pressable style={styles.addButton} onPress={handlePickFile}>
+              <Ionicons name="add" size={20} color={theme.tint} />
+              <Text style={[styles.addButtonText, { color: theme.tint }]}>
+                Add
+              </Text>
+            </Pressable>
+          </View>
+          {isFilesLoading ? (
+            <ActivityIndicator size="small" color={theme.tint} />
+          ) : files.length === 0 ? (
+            <View
+              style={[
+                styles.emptyVisits,
+                { backgroundColor: theme.cardBackground },
+              ]}
+            >
+              <Ionicons
+                name="document-outline"
+                size={32}
+                color={theme.emptyIcon}
+              />
+              <Text style={[styles.emptyText, { color: theme.textSecondary }]}>
+                No files yet
+              </Text>
+              <Text
+                style={[styles.emptySubtext, { color: theme.textTertiary }]}
+              >
+                Tap Add to upload documents or PDFs
+              </Text>
+            </View>
+          ) : (
+            <View style={styles.visitsList}>
+              {files.map((file) => (
+                <FileCard
+                  key={file.id}
+                  file={file}
+                  onDelete={() => handleDeleteFile(file.id, file.uri)}
+                />
+              ))}
+            </View>
+          )}
+        </View>
 
         <Pressable
           testID="delete-pet-button"
