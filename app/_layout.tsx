@@ -11,6 +11,7 @@ import { Link, Stack } from "expo-router";
 import { useEffect, useRef } from "react";
 import { AppState, Pressable, StyleSheet, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import * as Sentry from '@sentry/react-native';
 
 Sentry.init({
@@ -113,7 +114,9 @@ export default Sentry.wrap(function RootLayout() {
       <QueryClientProvider client={queryClient}>
         <NetworkProvider>
           <GestureHandlerRootView style={{ flex: 1 }}>
-            <AppContent />
+            <KeyboardProvider>
+              <AppContent />
+            </KeyboardProvider>
           </GestureHandlerRootView>
         </NetworkProvider>
       </QueryClientProvider>

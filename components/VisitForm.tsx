@@ -8,13 +8,13 @@ import { Controller, useForm } from "react-hook-form";
 import {
   Alert,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   TextInput,
   View,
   useColorScheme,
 } from "react-native";
+import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
 import { visitFormSchema, type VisitFormData } from "@/lib/schemas/visitForm";
 
 const colors = {
@@ -96,7 +96,7 @@ export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps
   };
 
   return (
-    <ScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic">
+    <KeyboardAwareScrollView style={[styles.container, { backgroundColor: theme.background }]} contentContainerStyle={styles.content} contentInsetAdjustmentBehavior="automatic" bottomOffset={20}>
       <Text style={[styles.label, { color: theme.text }]}>Visit Type</Text>
       <Controller
         control={control}
@@ -280,7 +280,7 @@ export function VisitForm({ initialData, onSubmit, submitLabel }: VisitFormProps
           {isSubmitting ? "Saving..." : submitLabel}
         </Text>
       </Pressable>
-    </ScrollView>
+    </KeyboardAwareScrollView>
   );
 }
 
