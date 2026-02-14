@@ -111,6 +111,12 @@ function DeleteAction({
   );
 }
 
+// Blocks the parent card's tap gesture so chip presses don't also open the PDF
+function GestureBlocker({ children }: { children: React.ReactNode }) {
+  const tap = Gesture.Tap();
+  return <GestureDetector gesture={tap}>{children}</GestureDetector>;
+}
+
 function CardContent({
   file,
   theme,
@@ -162,28 +168,46 @@ function CardContent({
           {file.createdAt.toLocaleDateString()}
         </Text>
         {hasAnalysis && (
-          <Pressable
-            style={styles.analysisIndicator}
-            onPress={handleViewAnalysis}
-          >
-            <Ionicons name="analytics" size={14} color={theme.success} />
-            <Text style={[styles.analysisText, { color: theme.success }]}>
-              View results
-            </Text>
-          </Pressable>
+          <GestureBlocker>
+            <Pressable
+              style={styles.analysisIndicator}
+              onPress={handleViewAnalysis}
+            >
+              <Ionicons name="analytics" size={14} color={theme.success} />
+              <Text style={[styles.analysisText, { color: theme.success }]}>
+                View results
+              </Text>
+            </Pressable>
+          </GestureBlocker>
         )}
       </View>
 
       {canAnalyze && !hasAnalysis && (
-        <Pressable style={styles.actionButton} onPress={handleAnalyzePress}>
-          <Ionicons name="analytics-outline" size={20} color={theme.tint} />
-        </Pressable>
+        <GestureBlocker>
+          <Pressable
+            style={[styles.analyzeChip, { backgroundColor: theme.tint + "15" }]}
+            onPress={handleAnalyzePress}
+          >
+            <Ionicons name="sparkles" size={14} color={theme.tint} />
+            <Text style={[styles.analyzeChipText, { color: theme.tint }]}>
+              Analyze
+            </Text>
+          </Pressable>
+        </GestureBlocker>
       )}
 
       {hasAnalysis && (
-        <Pressable style={styles.actionButton} onPress={handleViewAnalysis}>
-          <Ionicons name="checkmark-circle" size={20} color={theme.success} />
-        </Pressable>
+        <GestureBlocker>
+          <Pressable
+            style={[styles.analyzeChip, { backgroundColor: theme.success + "15" }]}
+            onPress={handleViewAnalysis}
+          >
+            <Ionicons name="checkmark-circle" size={14} color={theme.success} />
+            <Text style={[styles.analyzeChipText, { color: theme.success }]}>
+              Results
+            </Text>
+          </Pressable>
+        </GestureBlocker>
       )}
     </>
   );
@@ -291,12 +315,18 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: "500",
   },
-  actionButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    justifyContent: "center",
+  analyzeChip: {
+    flexDirection: "row",
     alignItems: "center",
+    gap: 4,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 14,
+    borderCurve: "continuous",
+  },
+  analyzeChipText: {
+    fontSize: 12,
+    fontWeight: "600",
   },
   deleteAction: {
     flex: 1,
