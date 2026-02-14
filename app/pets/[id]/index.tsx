@@ -318,7 +318,7 @@ export default function PetDetailScreen() {
                 <FileCard
                   key={file.id}
                   file={file}
-                  onDelete={() => handleDeleteFile(file.id, file.uri)}
+                  onDelete={(close) => handleDeleteFile(file.id, file.uri, close)}
                   onAnalyze={
                     file.remoteUri
                       ? () => handleAnalyzeFile(file.id, file.remoteUri!)

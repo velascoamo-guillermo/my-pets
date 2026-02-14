@@ -4,6 +4,7 @@ import { Ionicons } from "@expo/vector-icons";
 import * as Sentry from "@sentry/react-native";
 import * as Sharing from "expo-sharing";
 import { useRouter } from "expo-router";
+import { useRef, useCallback } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -13,6 +14,21 @@ import {
   View,
   useColorScheme,
 } from "react-native";
+import type { SwipeableMethods } from "react-native-gesture-handler/ReanimatedSwipeable";
+import {
+  Gesture,
+  GestureDetector,
+  RectButton,
+} from "react-native-gesture-handler";
+import ReanimatedSwipeable from "react-native-gesture-handler/ReanimatedSwipeable";
+import Reanimated, {
+  type SharedValue,
+  interpolate,
+  useAnimatedReaction,
+  useAnimatedStyle,
+  useSharedValue,
+} from "react-native-reanimated";
+import { scheduleOnRN } from "react-native-worklets";
 
 const colors = {
   light: {
@@ -20,7 +36,6 @@ const colors = {
     text: "#333",
     textSecondary: "#666",
     tint: "#007AFF",
-    danger: "#FF3B30",
     success: "#4CAF50",
   },
   dark: {
@@ -28,14 +43,13 @@ const colors = {
     text: "#ffffff",
     textSecondary: "#aaaaaa",
     tint: "#0A84FF",
-    danger: "#FF453A",
     success: "#32D74B",
   },
 };
 
 type FileCardProps = {
   file: PetFile;
-  onDelete: () => void;
+  onDelete: (close: () => void) => void;
   onAnalyze?: () => void;
   analyzingFileId?: string | null;
 };
@@ -58,14 +72,58 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function FileCard({
+function DeleteAction({
+  drag,
+  onPress,
+}: {
+  drag: SharedValue<number>;
+  onPress: () => void;
+}) {
+  const triggered = useSharedValue(false);
+
+  useAnimatedReaction(
+    () => Math.abs(drag.value),
+    (absDrag) => {
+      if (absDrag > 280 && !triggered.value) {
+        triggered.value = true;
+        scheduleOnRN(onPress);
+      }
+      if (absDrag < 40) {
+        triggered.value = false;
+      }
+    },
+  );
+
+  const circleStyle = useAnimatedStyle(() => {
+    const absDrag = Math.abs(drag.value);
+    const scale = interpolate(absDrag, [0, 80], [0.4, 1], "clamp");
+    const width = interpolate(absDrag, [80, 200], [48, 160], "extend");
+    return {
+      transform: [{ scale }],
+      width: Math.max(48, width),
+    };
+  });
+
+  return (
+    <RectButton style={styles.deleteAction} onPress={onPress}>
+      <Reanimated.View style={[styles.deleteCircle, circleStyle]}>
+        <Ionicons name="trash-outline" size={20} color="#fff" />
+      </Reanimated.View>
+    </RectButton>
+  );
+}
+
+function CardContent({
   file,
-  onDelete,
+  theme,
   onAnalyze,
   analyzingFileId,
-}: FileCardProps) {
-  const colorScheme = useColorScheme();
-  const theme = colors[colorScheme ?? "light"];
+}: {
+  file: PetFile;
+  theme: (typeof colors)["light"];
+  onAnalyze?: () => void;
+  analyzingFileId?: string | null;
+}) {
   const router = useRouter();
   const icon = getFileIcon(file.fileType);
   const iconColor = getFileIconColor(file.fileType);
@@ -76,36 +134,11 @@ export function FileCard({
   const isAnalyzing = analyzingFileId === file.id;
   const canAnalyze = isPdf && !!onAnalyze && !!file.remoteUri;
 
-  const handleOpen = async () => {
-    try {
-      const isAvailable = await Sharing.isAvailableAsync();
-      if (isAvailable) {
-        await Sharing.shareAsync(file.uri);
-      } else {
-        Alert.alert("Error", "Sharing is not available on this device");
-      }
-    } catch (err) {
-      Sentry.captureException(err);
-      Alert.alert("Error", "Could not open file");
-    }
-  };
-
-  const handleDelete = () => {
-    Alert.alert(
-      "Delete File",
-      `Are you sure you want to delete "${file.name}"?`,
-      [
-        { text: "Cancel", style: "cancel" },
-        { text: "Delete", style: "destructive", onPress: onDelete },
-      ]
-    );
-  };
-
   const handleAnalyzePress = () => {
     if (!file.remoteUri) {
       Alert.alert(
         "Sync Required",
-        "This file needs to be synced before it can be analyzed."
+        "This file needs to be synced before it can be analyzed.",
       );
       return;
     }
@@ -119,14 +152,7 @@ export function FileCard({
   };
 
   return (
-    <Pressable
-      style={({ pressed }) => [
-        styles.card,
-        { backgroundColor: theme.cardBackground },
-        pressed && styles.cardPressed,
-      ]}
-      onPress={handleOpen}
-    >
+    <>
       <View
         style={[styles.iconContainer, { backgroundColor: iconColor + "20" }]}
       >
@@ -172,11 +198,67 @@ export function FileCard({
           <Ionicons name="checkmark-circle" size={20} color={theme.success} />
         </Pressable>
       )}
+    </>
+  );
+}
 
-      <Pressable style={styles.deleteButton} onPress={handleDelete}>
-        <Ionicons name="trash-outline" size={18} color={theme.danger} />
-      </Pressable>
-    </Pressable>
+export function FileCard({
+  file,
+  onDelete,
+  onAnalyze,
+  analyzingFileId,
+}: FileCardProps) {
+  const colorScheme = useColorScheme();
+  const theme = colors[colorScheme ?? "light"];
+  const swipeableRef = useRef<SwipeableMethods>(null);
+
+  const handleDelete = useCallback(() => {
+    const close = () => swipeableRef.current?.close();
+    onDelete(close);
+  }, [onDelete]);
+
+  const handleOpen = useCallback(async () => {
+    try {
+      const isAvailable = await Sharing.isAvailableAsync();
+      if (isAvailable) {
+        await Sharing.shareAsync(file.uri);
+      } else {
+        Alert.alert("Error", "Sharing is not available on this device");
+      }
+    } catch (err) {
+      Sentry.captureException(err);
+      Alert.alert("Error", "Could not open file");
+    }
+  }, [file.uri]);
+
+  const tap = Gesture.Tap().onEnd(() => {
+    scheduleOnRN(handleOpen);
+  });
+
+  return (
+    <ReanimatedSwipeable
+      ref={swipeableRef}
+      friction={1.5}
+      rightThreshold={80}
+      overshootRight
+      renderRightActions={(_progress, drag) => (
+        <DeleteAction drag={drag} onPress={handleDelete} />
+      )}
+      onSwipeableWillOpen={() => {}}
+    >
+      <GestureDetector gesture={tap}>
+        <View
+          style={[styles.card, { backgroundColor: theme.cardBackground }]}
+        >
+          <CardContent
+            file={file}
+            theme={theme}
+            onAnalyze={onAnalyze}
+            analyzingFileId={analyzingFileId}
+          />
+        </View>
+      </GestureDetector>
+    </ReanimatedSwipeable>
   );
 }
 
@@ -187,9 +269,6 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     borderCurve: "continuous",
     padding: 12,
-  },
-  cardPressed: {
-    opacity: 0.7,
   },
   iconContainer: {
     width: 44,
@@ -227,10 +306,16 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
   },
-  deleteButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+  deleteAction: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "flex-end",
+    paddingRight: 16,
+  },
+  deleteCircle: {
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: "#FF3B30",
     justifyContent: "center",
     alignItems: "center",
   },

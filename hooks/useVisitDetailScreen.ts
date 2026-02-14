@@ -111,14 +111,31 @@ export function useVisitDetailScreen() {
   }, [visit, id, addFileMutation]);
 
   const handleDeleteFile = useCallback(
-    async (fileId: string, fileUri: string) => {
+    (fileId: string, fileUri: string, close: () => void) => {
       if (!visit) return;
-      await deleteFileMutation.mutateAsync({
-        id: fileId,
-        fileUri,
-        petId: visit.petId,
-        visitId: id,
-      });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+      Alert.alert(
+        "Delete File",
+        "Are you sure you want to delete this file?",
+        [
+          { text: "Cancel", style: "cancel", onPress: close },
+          {
+            text: "Delete",
+            style: "destructive",
+            onPress: async () => {
+              await deleteFileMutation.mutateAsync({
+                id: fileId,
+                fileUri,
+                petId: visit.petId,
+                visitId: id,
+              });
+              Haptics.notificationAsync(
+                Haptics.NotificationFeedbackType.Success,
+              );
+            },
+          },
+        ],
+      );
     },
     [visit, id, deleteFileMutation],
   );
