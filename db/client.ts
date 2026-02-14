@@ -69,6 +69,28 @@ export async function initDatabase() {
     );
   }
 
+  // File analyses table for PDF analysis results
+  expoDb.execSync(`
+    CREATE TABLE IF NOT EXISTS file_analyses (
+      id TEXT PRIMARY KEY,
+      file_id TEXT NOT NULL REFERENCES pet_files(id) ON DELETE CASCADE,
+      pet_id TEXT NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+      visit_id TEXT REFERENCES vet_visits(id) ON DELETE CASCADE,
+      status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'processing', 'completed', 'failed')),
+      lab_values TEXT,
+      summary TEXT,
+      interpretation TEXT,
+      error_message TEXT,
+      analyzed_at INTEGER,
+      created_at INTEGER NOT NULL,
+      updated_at INTEGER NOT NULL,
+      sync_status TEXT NOT NULL DEFAULT 'pending' CHECK (sync_status IN ('synced', 'pending', 'conflict'))
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_file_analyses_file_id ON file_analyses(file_id);
+    CREATE INDEX IF NOT EXISTS idx_file_analyses_pet_id ON file_analyses(pet_id);
+  `);
+
   // Sync meta table for tracking last sync timestamp
   expoDb.execSync(`
     CREATE TABLE IF NOT EXISTS sync_meta (

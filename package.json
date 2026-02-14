@@ -14,7 +14,8 @@
     "prepare": "husky",
     "test": "jest",
     "build:e2e": "eas build --profile e2e --platform ios --local --output build-e2e.tar.gz && tar -xzf build-e2e.tar.gz && xcrun simctl install booted MyPets.app && rm build-e2e.tar.gz",
-    "test:e2e": "maestro test .maestro/e2e-test.yaml"
+    "test:e2e": "maestro test .maestro/e2e-test.yaml",
+    "deploy:analyze-pdf": "bunx supabase functions deploy analyze-pdf --no-verify-jwt"
   },
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",

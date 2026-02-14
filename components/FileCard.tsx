@@ -1,27 +1,43 @@
-import { View, Text, StyleSheet, Pressable, Alert, useColorScheme } from "react-native";
+import { useAnalysisByFile } from "@/hooks/useFileAnalyses";
+import type { PetFile } from "@/db/schema";
 import { Ionicons } from "@expo/vector-icons";
 import * as Sentry from "@sentry/react-native";
 import * as Sharing from "expo-sharing";
-import type { PetFile } from "@/db/schema";
+import { useRouter } from "expo-router";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  StyleSheet,
+  Text,
+  View,
+  useColorScheme,
+} from "react-native";
 
 const colors = {
   light: {
     cardBackground: "#ffffff",
     text: "#333",
     textSecondary: "#666",
+    tint: "#007AFF",
     danger: "#FF3B30",
+    success: "#4CAF50",
   },
   dark: {
     cardBackground: "#1c1c1e",
     text: "#ffffff",
     textSecondary: "#aaaaaa",
+    tint: "#0A84FF",
     danger: "#FF453A",
+    success: "#32D74B",
   },
 };
 
 type FileCardProps = {
   file: PetFile;
   onDelete: () => void;
+  onAnalyze?: () => void;
+  analyzingFileId?: string | null;
 };
 
 function getFileIcon(fileType: string): keyof typeof Ionicons.glyphMap {
@@ -42,11 +58,23 @@ function formatFileSize(bytes: number): string {
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
 }
 
-export function FileCard({ file, onDelete }: FileCardProps) {
+export function FileCard({
+  file,
+  onDelete,
+  onAnalyze,
+  analyzingFileId,
+}: FileCardProps) {
   const colorScheme = useColorScheme();
   const theme = colors[colorScheme ?? "light"];
+  const router = useRouter();
   const icon = getFileIcon(file.fileType);
   const iconColor = getFileIconColor(file.fileType);
+
+  const isPdf = file.fileType.includes("pdf");
+  const { data: analysis } = useAnalysisByFile(isPdf ? file.id : undefined);
+  const hasAnalysis = analysis?.status === "completed";
+  const isAnalyzing = analyzingFileId === file.id;
+  const canAnalyze = isPdf && !!onAnalyze && !!file.remoteUri;
 
   const handleOpen = async () => {
     try {
@@ -73,6 +101,23 @@ export function FileCard({ file, onDelete }: FileCardProps) {
     );
   };
 
+  const handleAnalyzePress = () => {
+    if (!file.remoteUri) {
+      Alert.alert(
+        "Sync Required",
+        "This file needs to be synced before it can be analyzed."
+      );
+      return;
+    }
+    onAnalyze?.();
+  };
+
+  const handleViewAnalysis = () => {
+    if (analysis) {
+      router.push(`/analyses/${analysis.id}`);
+    }
+  };
+
   return (
     <Pressable
       style={({ pressed }) => [
@@ -82,7 +127,9 @@ export function FileCard({ file, onDelete }: FileCardProps) {
       ]}
       onPress={handleOpen}
     >
-      <View style={[styles.iconContainer, { backgroundColor: iconColor + "20" }]}>
+      <View
+        style={[styles.iconContainer, { backgroundColor: iconColor + "20" }]}
+      >
         <Ionicons name={icon} size={24} color={iconColor} />
       </View>
       <View style={styles.content}>
@@ -90,9 +137,42 @@ export function FileCard({ file, onDelete }: FileCardProps) {
           {file.name}
         </Text>
         <Text style={[styles.meta, { color: theme.textSecondary }]}>
-          {formatFileSize(file.fileSize)} · {file.createdAt.toLocaleDateString()}
+          {formatFileSize(file.fileSize)} ·{" "}
+          {file.createdAt.toLocaleDateString()}
         </Text>
+        {hasAnalysis && (
+          <Pressable
+            style={styles.analysisIndicator}
+            onPress={handleViewAnalysis}
+          >
+            <Ionicons name="analytics" size={14} color={theme.success} />
+            <Text style={[styles.analysisText, { color: theme.success }]}>
+              View results
+            </Text>
+          </Pressable>
+        )}
       </View>
+
+      {canAnalyze && !hasAnalysis && (
+        <Pressable
+          style={styles.actionButton}
+          onPress={handleAnalyzePress}
+          disabled={isAnalyzing}
+        >
+          {isAnalyzing ? (
+            <ActivityIndicator size="small" color={theme.tint} />
+          ) : (
+            <Ionicons name="analytics-outline" size={20} color={theme.tint} />
+          )}
+        </Pressable>
+      )}
+
+      {hasAnalysis && (
+        <Pressable style={styles.actionButton} onPress={handleViewAnalysis}>
+          <Ionicons name="checkmark-circle" size={20} color={theme.success} />
+        </Pressable>
+      )}
+
       <Pressable style={styles.deleteButton} onPress={handleDelete}>
         <Ionicons name="trash-outline" size={18} color={theme.danger} />
       </Pressable>
@@ -129,6 +209,23 @@ const styles = StyleSheet.create({
   meta: {
     fontSize: 13,
     marginTop: 2,
+  },
+  analysisIndicator: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+    marginTop: 4,
+  },
+  analysisText: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  actionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    justifyContent: "center",
+    alignItems: "center",
   },
   deleteButton: {
     width: 36,

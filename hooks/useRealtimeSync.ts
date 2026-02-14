@@ -30,6 +30,11 @@ export function useRealtimeSync() {
         { event: "*", schema: "public", table: "pet_files" },
         () => debouncedSync(),
       )
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "file_analyses" },
+        () => debouncedSync(),
+      )
       .subscribe();
 
     function debouncedSync() {

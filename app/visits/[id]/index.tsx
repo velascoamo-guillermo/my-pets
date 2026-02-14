@@ -47,12 +47,14 @@ export default function VisitDetailScreen() {
     files,
     isLoading,
     isFilesLoading,
+    analyzingFileId,
     handleEdit,
     handleComplete,
     handleDelete,
     handlePetPress,
     handlePickFile,
     handleDeleteFile,
+    handleAnalyzeFile,
   } = useVisitDetailScreen();
 
   if (isLoading || !visit) {
@@ -277,6 +279,12 @@ export default function VisitDetailScreen() {
                   key={file.id}
                   file={file}
                   onDelete={() => handleDeleteFile(file.id, file.uri)}
+                  onAnalyze={
+                    file.remoteUri
+                      ? () => handleAnalyzeFile(file.id, file.remoteUri!)
+                      : undefined
+                  }
+                  analyzingFileId={analyzingFileId}
                 />
               ))}
             </View>

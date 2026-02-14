@@ -5,7 +5,9 @@ import * as DocumentPicker from "expo-document-picker";
 import { Directory, File as FSFile, Paths } from "expo-file-system";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useAnalyzePdf } from "@/hooks/useFileAnalyses";
 import { cancelNotificationForVisit } from "@/hooks/useNotifications";
+import { calculateAge } from "@/lib/petAge";
 import {
   useAddPetFile,
   useDeletePetFile,
@@ -31,6 +33,7 @@ export function useVisitDetailScreen() {
   const deleteVisitMutation = useDeleteVisit();
   const addFileMutation = useAddPetFile();
   const deleteFileMutation = useDeletePetFile();
+  const analyzePdfMutation = useAnalyzePdf();
 
   const handleEdit = useCallback(() => {
     router.push(`/visits/${id}/edit`);
@@ -120,17 +123,46 @@ export function useVisitDetailScreen() {
     [visit, id, deleteFileMutation],
   );
 
+  const handleAnalyzeFile = useCallback(
+    async (fileId: string, fileUrl: string) => {
+      if (!visit) return;
+      try {
+        const petAge = pet?.birthDate ? calculateAge(pet.birthDate) : undefined;
+        const analysisId = await analyzePdfMutation.mutateAsync({
+          fileId,
+          fileUrl,
+          petId: visit.petId,
+          visitId: id,
+          petSpecies: pet?.species,
+          petAge,
+        });
+        router.push(`/analyses/${analysisId}`);
+      } catch (err) {
+        Sentry.captureException(err);
+        Alert.alert(
+          "Analysis Failed",
+          err instanceof Error ? err.message : "Please try again"
+        );
+      }
+    },
+    [visit, id, pet?.species, pet?.birthDate, analyzePdfMutation, router]
+  );
+
   return {
     visit,
     pet,
     files,
     isLoading: isVisitLoading,
     isFilesLoading,
+    analyzingFileId: analyzePdfMutation.isPending
+      ? analyzePdfMutation.variables?.fileId ?? null
+      : null,
     handleEdit,
     handleComplete,
     handleDelete,
     handlePetPress,
     handlePickFile,
     handleDeleteFile,
+    handleAnalyzeFile,
   };
 }

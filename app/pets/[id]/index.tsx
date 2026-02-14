@@ -50,12 +50,14 @@ export default function PetDetailScreen() {
     isVisitsLoading,
     files,
     isFilesLoading,
+    analyzingFileId,
     upcomingVisits,
     pastVisits,
     age,
     handleDelete,
     handlePickFile,
     handleDeleteFile,
+    handleAnalyzeFile,
     handleDeleteVisit,
     handleCompleteVisit,
     handleEditPress,
@@ -317,6 +319,12 @@ export default function PetDetailScreen() {
                   key={file.id}
                   file={file}
                   onDelete={() => handleDeleteFile(file.id, file.uri)}
+                  onAnalyze={
+                    file.remoteUri
+                      ? () => handleAnalyzeFile(file.id, file.remoteUri!)
+                      : undefined
+                  }
+                  analyzingFileId={analyzingFileId}
                 />
               ))}
             </View>

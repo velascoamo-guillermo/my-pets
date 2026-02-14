@@ -5,6 +5,7 @@ import * as DocumentPicker from "expo-document-picker";
 import { Directory, File as FSFile, Paths } from "expo-file-system";
 import * as Haptics from "expo-haptics";
 import { useLocalSearchParams, useRouter } from "expo-router";
+import { useAnalyzePdf } from "@/hooks/useFileAnalyses";
 import { cancelNotificationForVisit } from "@/hooks/useNotifications";
 import {
   useAddPetFile,
@@ -17,6 +18,7 @@ import {
   useMarkVisitComplete,
   useVisitsByPet,
 } from "@/hooks/useVisits";
+import { calculateAge } from "@/lib/petAge";
 import { syncWithSupabase } from "@/services/sync";
 
 export function usePetDetailScreen() {
@@ -32,6 +34,7 @@ export function usePetDetailScreen() {
   const deleteVisitMutation = useDeleteVisit();
   const addFileMutation = useAddPetFile();
   const deleteFileMutation = useDeletePetFile();
+  const analyzePdfMutation = useAnalyzePdf();
 
   const upcomingVisits = useMemo(
     () =>
@@ -165,40 +168,49 @@ export function usePetDetailScreen() {
     [router],
   );
 
+  const handleAnalyzeFile = useCallback(
+    async (fileId: string, fileUrl: string) => {
+      if (!pet) return;
+      try {
+        const analysisId = await analyzePdfMutation.mutateAsync({
+          fileId,
+          fileUrl,
+          petId: id!,
+          petSpecies: pet.species,
+          petAge: age ?? undefined,
+        });
+        router.push(`/analyses/${analysisId}`);
+      } catch (err) {
+        Sentry.captureException(err);
+        Alert.alert(
+          "Analysis Failed",
+          err instanceof Error ? err.message : "Please try again"
+        );
+      }
+    },
+    [pet, id, age, analyzePdfMutation, router]
+  );
+
   return {
     pet,
     isPetLoading,
     isVisitsLoading,
     files,
     isFilesLoading,
+    analyzingFileId: analyzePdfMutation.isPending
+      ? analyzePdfMutation.variables?.fileId ?? null
+      : null,
     upcomingVisits,
     pastVisits,
     age,
     handleDelete,
     handlePickFile,
     handleDeleteFile,
+    handleAnalyzeFile,
     handleDeleteVisit,
     handleCompleteVisit,
     handleEditPress,
     handleAddVisitPress,
     handleVisitPress,
   };
-}
-
-function calculateAge(birthDate: Date): string {
-  const now = new Date();
-  const years = now.getFullYear() - birthDate.getFullYear();
-  const months = now.getMonth() - birthDate.getMonth();
-
-  if (years < 1) {
-    const totalMonths = months >= 0 ? months : 12 + months;
-    return `${totalMonths} month${totalMonths !== 1 ? "s" : ""}`;
-  }
-
-  if (years === 1 && months < 0) {
-    const totalMonths = 12 + months;
-    return `${totalMonths} month${totalMonths !== 1 ? "s" : ""}`;
-  }
-
-  return `${years} year${years !== 1 ? "s" : ""} old`;
 }
