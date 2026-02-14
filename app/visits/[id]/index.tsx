@@ -47,7 +47,6 @@ export default function VisitDetailScreen() {
     files,
     isLoading,
     isFilesLoading,
-    analyzingFileId,
     handleEdit,
     handleComplete,
     handleDelete,
@@ -284,7 +283,6 @@ export default function VisitDetailScreen() {
                       ? () => handleAnalyzeFile(file.id, file.remoteUri!)
                       : undefined
                   }
-                  analyzingFileId={analyzingFileId}
                 />
               ))}
             </View>

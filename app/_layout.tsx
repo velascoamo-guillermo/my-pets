@@ -6,16 +6,17 @@ import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { queryClient } from "@/lib/queryClient";
 import { syncWithSupabase } from "@/services/sync";
 import { Ionicons } from "@expo/vector-icons";
+import * as Sentry from "@sentry/react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
+import { isLiquidGlassAvailable } from "expo-glass-effect";
 import { Link, Stack } from "expo-router";
 import { useEffect, useRef } from "react";
 import { AppState, Pressable, StyleSheet, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
 import { KeyboardProvider } from "react-native-keyboard-controller";
-import * as Sentry from '@sentry/react-native';
 
 Sentry.init({
-  dsn: 'https://8ee0c7dea63d7ee74bda1986f098ede7@o4510851483369472.ingest.de.sentry.io/4510851488809040',
+  dsn: "https://8ee0c7dea63d7ee74bda1986f098ede7@o4510851483369472.ingest.de.sentry.io/4510851488809040",
 
   // Adds more context data to events (IP address, cookies, user, etc.)
   // For more information, visit: https://docs.sentry.io/platforms/react-native/data-management/data-collected/
@@ -92,6 +93,18 @@ function AppContent() {
                 </Pressable>
               </Link>
             ),
+          }}
+        />
+        <Stack.Screen
+          name="analyzing/[id]"
+          options={{
+            presentation: "formSheet",
+            headerShown: false,
+            sheetGrabberVisible: true,
+            sheetAllowedDetents: "fitToContents",
+            ...(isLiquidGlassAvailable() && {
+              contentStyle: { backgroundColor: "transparent" },
+            }),
           }}
         />
       </Stack>

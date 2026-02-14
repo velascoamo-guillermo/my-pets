@@ -141,28 +141,22 @@ export function useVisitDetailScreen() {
   );
 
   const handleAnalyzeFile = useCallback(
-    async (fileId: string, fileUrl: string) => {
+    (fileId: string, fileUrl: string) => {
       if (!visit) return;
-      try {
-        const petAge = pet?.birthDate ? calculateAge(pet.birthDate) : undefined;
-        const analysisId = await analyzePdfMutation.mutateAsync({
-          fileId,
-          fileUrl,
-          petId: visit.petId,
-          visitId: id,
-          petSpecies: pet?.species,
-          petAge,
-        });
-        router.push(`/analyses/${analysisId}`);
-      } catch (err) {
-        Sentry.captureException(err);
-        Alert.alert(
-          "Analysis Failed",
-          err instanceof Error ? err.message : "Please try again"
-        );
-      }
+      const petAge = pet?.birthDate ? calculateAge(pet.birthDate) : undefined;
+      analyzePdfMutation.mutate({
+        fileId,
+        fileUrl,
+        petId: visit.petId,
+        visitId: id,
+        petSpecies: pet?.species,
+        petAge,
+        onPendingCreated: (analysisId) => {
+          router.push(`/analyzing/${analysisId}`);
+        },
+      });
     },
-    [visit, id, pet?.species, pet?.birthDate, analyzePdfMutation, router]
+    [visit, id, pet?.species, pet?.birthDate, analyzePdfMutation, router],
   );
 
   return {
@@ -171,9 +165,6 @@ export function useVisitDetailScreen() {
     files,
     isLoading: isVisitLoading,
     isFilesLoading,
-    analyzingFileId: analyzePdfMutation.isPending
-      ? analyzePdfMutation.variables?.fileId ?? null
-      : null,
     handleEdit,
     handleComplete,
     handleDelete,

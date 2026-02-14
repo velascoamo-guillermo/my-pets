@@ -50,7 +50,6 @@ export default function PetDetailScreen() {
     isVisitsLoading,
     files,
     isFilesLoading,
-    analyzingFileId,
     upcomingVisits,
     pastVisits,
     age,
@@ -324,7 +323,6 @@ export default function PetDetailScreen() {
                       ? () => handleAnalyzeFile(file.id, file.remoteUri!)
                       : undefined
                   }
-                  analyzingFileId={analyzingFileId}
                 />
               ))}
             </View>

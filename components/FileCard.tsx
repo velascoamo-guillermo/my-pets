@@ -6,7 +6,6 @@ import * as Sharing from "expo-sharing";
 import { useRouter } from "expo-router";
 import { useRef, useCallback } from "react";
 import {
-  ActivityIndicator,
   Alert,
   Pressable,
   StyleSheet,
@@ -51,7 +50,6 @@ type FileCardProps = {
   file: PetFile;
   onDelete: (close: () => void) => void;
   onAnalyze?: () => void;
-  analyzingFileId?: string | null;
 };
 
 function getFileIcon(fileType: string): keyof typeof Ionicons.glyphMap {
@@ -117,12 +115,10 @@ function CardContent({
   file,
   theme,
   onAnalyze,
-  analyzingFileId,
 }: {
   file: PetFile;
   theme: (typeof colors)["light"];
   onAnalyze?: () => void;
-  analyzingFileId?: string | null;
 }) {
   const router = useRouter();
   const icon = getFileIcon(file.fileType);
@@ -131,7 +127,6 @@ function CardContent({
   const isPdf = file.fileType.includes("pdf");
   const { data: analysis } = useAnalysisByFile(isPdf ? file.id : undefined);
   const hasAnalysis = analysis?.status === "completed";
-  const isAnalyzing = analyzingFileId === file.id;
   const canAnalyze = isPdf && !!onAnalyze && !!file.remoteUri;
 
   const handleAnalyzePress = () => {
@@ -180,16 +175,8 @@ function CardContent({
       </View>
 
       {canAnalyze && !hasAnalysis && (
-        <Pressable
-          style={styles.actionButton}
-          onPress={handleAnalyzePress}
-          disabled={isAnalyzing}
-        >
-          {isAnalyzing ? (
-            <ActivityIndicator size="small" color={theme.tint} />
-          ) : (
-            <Ionicons name="analytics-outline" size={20} color={theme.tint} />
-          )}
+        <Pressable style={styles.actionButton} onPress={handleAnalyzePress}>
+          <Ionicons name="analytics-outline" size={20} color={theme.tint} />
         </Pressable>
       )}
 
@@ -206,7 +193,6 @@ export function FileCard({
   file,
   onDelete,
   onAnalyze,
-  analyzingFileId,
 }: FileCardProps) {
   const colorScheme = useColorScheme();
   const theme = colors[colorScheme ?? "light"];
@@ -254,7 +240,6 @@ export function FileCard({
             file={file}
             theme={theme}
             onAnalyze={onAnalyze}
-            analyzingFileId={analyzingFileId}
           />
         </View>
       </GestureDetector>

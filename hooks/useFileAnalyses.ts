@@ -50,6 +50,7 @@ export function useAnalyzePdf() {
       visitId,
       petSpecies,
       petAge,
+      onPendingCreated,
     }: {
       fileId: string;
       fileUrl: string;
@@ -57,6 +58,7 @@ export function useAnalyzePdf() {
       visitId?: string;
       petSpecies?: "dog" | "cat";
       petAge?: string;
+      onPendingCreated?: (analysisId: string) => void;
     }) => {
       // Create pending analysis record locally
       const pendingAnalysis = await createFileAnalysis({
@@ -70,6 +72,8 @@ export function useAnalyzePdf() {
         errorMessage: null,
         analyzedAt: null,
       });
+
+      onPendingCreated?.(pendingAnalysis.id);
 
       try {
         // Update to processing

@@ -190,26 +190,20 @@ export function usePetDetailScreen() {
   );
 
   const handleAnalyzeFile = useCallback(
-    async (fileId: string, fileUrl: string) => {
+    (fileId: string, fileUrl: string) => {
       if (!pet) return;
-      try {
-        const analysisId = await analyzePdfMutation.mutateAsync({
-          fileId,
-          fileUrl,
-          petId: id!,
-          petSpecies: pet.species,
-          petAge: age ?? undefined,
-        });
-        router.push(`/analyses/${analysisId}`);
-      } catch (err) {
-        Sentry.captureException(err);
-        Alert.alert(
-          "Analysis Failed",
-          err instanceof Error ? err.message : "Please try again"
-        );
-      }
+      analyzePdfMutation.mutate({
+        fileId,
+        fileUrl,
+        petId: id!,
+        petSpecies: pet.species,
+        petAge: age ?? undefined,
+        onPendingCreated: (analysisId) => {
+          router.push(`/analyzing/${analysisId}`);
+        },
+      });
     },
-    [pet, id, age, analyzePdfMutation, router]
+    [pet, id, age, analyzePdfMutation, router],
   );
 
   return {
@@ -218,9 +212,6 @@ export function usePetDetailScreen() {
     isVisitsLoading,
     files,
     isFilesLoading,
-    analyzingFileId: analyzePdfMutation.isPending
-      ? analyzePdfMutation.variables?.fileId ?? null
-      : null,
     upcomingVisits,
     pastVisits,
     age,
