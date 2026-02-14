@@ -98,13 +98,4 @@ export async function initDatabase() {
       value TEXT NOT NULL
     );
   `);
-
-  // TODO: remove after one run — cleanup corrupted test analyses
-  expoDb.execSync(`
-    DELETE FROM file_analyses
-    WHERE file_id IN (
-      '5f4b4aa8-f2a1-443d-9919-0d5c73b2b958',
-      '0ee1b932-227f-44b6-a9b2-2a61d994d9cb'
-    );
-  `);
 }
