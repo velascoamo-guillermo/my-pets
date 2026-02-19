@@ -8,10 +8,12 @@ Built with Expo SDK 54, React Native 0.81, and the New Architecture.
 
 - **Pet management** -- Add dogs and cats with photos, birth dates, and vet contact info
 - **Vet visits** -- Schedule vaccinations, checkups, and emergencies with reminders
-- **File storage** -- Attach PDFs, images, and documents to each pet
+- **File storage** -- Attach PDFs, images, and documents to each pet; in-app PDF viewer
+- **AI lab analysis** -- Analyze veterinary lab PDFs with Claude AI; extracts lab values, generates interpretations, and tracks trends across visits
 - **Offline-first** -- Everything works without internet; data syncs when connectivity returns
 - **Real-time sync** -- Supabase Realtime pushes changes across devices instantly
 - **Notifications** -- Configurable reminders before each vet visit
+- **Liquid Glass** -- Transparent formSheet UI on iOS 26+ using expo-glass-effect
 - **Dark mode** -- Automatic theme based on system preference
 
 ## Tech Stack
@@ -26,6 +28,9 @@ Built with Expo SDK 54, React Native 0.81, and the New Architecture.
 | Forms      | [React Hook Form](https://react-hook-form.com) + [Zod](https://zod.dev) v4                                  |
 | Animations | [React Native Reanimated](https://docs.swmansion.com/react-native-reanimated/) v4                           |
 | Gestures   | [React Native Gesture Handler](https://docs.swmansion.com/react-native-gesture-handler/)                    |
+| AI         | [Claude API](https://docs.anthropic.com) via Supabase Edge Functions                                        |
+| PDF Viewer | [react-native-webview](https://github.com/nicolo-ribaudo/react-native-webview)                               |
+| Glass UI   | [expo-glass-effect](https://docs.expo.dev/versions/latest/sdk/glass-effect/) (iOS 26+)                       |
 | Network    | [@react-native-community/netinfo](https://github.com/react-native-netinfo/react-native-netinfo)             |
 
 ## Architecture
@@ -93,7 +98,15 @@ app/
       edit.tsx             # Edit pet form
       visits/new.tsx       # Schedule vet visit
   visits/
-    [id]/edit.tsx          # Edit vet visit
+    [id]/
+      index.tsx            # Visit detail (files, notes)
+      edit.tsx             # Edit vet visit
+  analyses/
+    [id]/index.tsx         # Lab results detail (values, interpretation, AI disclaimer)
+  analyzing/
+    [id].tsx               # Analysis loading formSheet (liquid glass on iOS 26+)
+  pdf-viewer/
+    [id].tsx               # In-app PDF viewer (WebView)
   _layout.tsx              # Root layout, providers, offline banner
 
 hooks/
@@ -103,10 +116,15 @@ hooks/
   useEditPetScreen.ts      # Edit pet form logic
   useNewVisitScreen.ts     # New visit form logic
   useEditVisitScreen.ts    # Edit visit form logic
+  useVisitDetailScreen.ts  # Visit detail screen logic
   useSettingsScreen.ts     # Settings screen logic
+  useAnalysisDetailScreen.ts # Lab results screen logic
+  useAnalyzingScreen.ts    # Analysis loading screen logic
+  usePdfViewerScreen.ts    # PDF viewer screen logic
   usePets.ts               # Pet queries and mutations
   useVisits.ts             # Visit queries and mutations
   usePetFiles.ts           # File queries and mutations
+  useFileAnalyses.ts       # Analysis queries and mutations (Claude AI)
   useNetworkStatus.tsx     # NetworkProvider + connectivity hook
   useRealtimeSync.ts       # Supabase Realtime subscriptions
   useNotifications.ts      # Notification setup and scheduling
@@ -114,7 +132,7 @@ hooks/
 components/
   PetCard.tsx              # Grid card with image + glass name overlay
   VisitCard.tsx            # Swipeable row card with type icons
-  FileCard.tsx             # Document card with share/delete
+  FileCard.tsx             # Document card with swipe-to-delete, analyze chip, PDF viewer
   PetForm.tsx              # Reusable pet form (create + edit)
   VisitForm.tsx            # Reusable visit form (create + edit)
   OfflineBanner.tsx        # Animated offline status banner
@@ -127,11 +145,13 @@ db/
     pets.ts                # Pet CRUD operations
     visits.ts              # Visit CRUD operations
     petFiles.ts            # File CRUD operations
+    fileAnalyses.ts        # Analysis CRUD operations
 
 services/
   sync.ts                  # Bidirectional sync engine
   supabase.ts              # Supabase client
   notifications.ts         # Notification scheduling
+  analysis.ts              # Claude AI PDF analysis (via Supabase Edge Function)
 
 lib/
   queryClient.ts           # TanStack Query configuration
@@ -146,7 +166,9 @@ lib/
 
 **vet_visits** -- `id`, `petId` (FK cascade), `type` (vaccination | checkup | emergency | other), `title`, `notes`, `scheduledDate`, `completed`, `completedDate`, `reminderDays`, `notificationId`, `createdAt`, `updatedAt`, `syncStatus`
 
-**pet_files** -- `id`, `petId` (FK cascade), `name`, `uri` (local path), `remoteUri` (Supabase Storage URL), `fileType`, `fileSize`, `createdAt`, `syncStatus`
+**pet_files** -- `id`, `petId` (FK cascade), `visitId` (FK cascade, optional), `name`, `uri` (local path), `remoteUri` (Supabase Storage URL), `fileType`, `fileSize`, `createdAt`, `syncStatus`
+
+**file_analyses** -- `id`, `fileId` (FK cascade), `petId` (FK cascade), `visitId` (FK cascade, optional), `status` (pending | processing | completed | failed), `labValues` (JSON), `summary`, `interpretation`, `errorMessage`, `analyzedAt`, `createdAt`, `updatedAt`, `syncStatus`
 
 **sync_meta** -- Key-value store tracking `last_sync_at`
 
