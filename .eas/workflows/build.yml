@@ -7,7 +7,7 @@ on:
 
 jobs:
   checks:
-    name: TypeScript & Unit Tests
+    name: TypeScript & Tests
     type: custom
     steps:
       - uses: eas/checkout
@@ -15,7 +15,9 @@ jobs:
       - name: TypeScript check
         run: npx tsc --noEmit
       - name: Unit tests
-        run: npm test
+        run: npm test -- __tests__/db __tests__/validation --forceExit
+      - name: Integration tests
+        run: npm test -- __tests__/integration --forceExit
 
   fingerprint:
     name: Fingerprint
