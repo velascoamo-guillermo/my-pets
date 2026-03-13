@@ -17,10 +17,30 @@ GitHub Issue → feature branch → PR to develop → auto-merge → develop →
 Before starting any work, check the GitHub Project board:
 
 ```bash
-gh issue list --repo velascoamo-guillermo/my-pets --state open --assignee velascoamo-guillermo
+gh issue list --repo velascoamo-guillermo/my-pets --state open
 ```
 
-Take the highest-priority open issue. Move it to "In Progress" by assigning yourself if not already assigned.
+Take the highest-priority open issue. Then move it to **In Progress** on the project board:
+
+```bash
+# Get the item ID for the issue in the project
+ITEM_ID=$(gh api graphql -f query="query { node(id: \"PVT_kwHOCKbbIM4BRreS\") { ... on ProjectV2 { items(first: 50) { nodes { id content { ... on Issue { number } } } } } } }" --jq ".data.node.items.nodes[] | select(.content.number == <issue-number>) | .id")
+
+# Move to In Progress (option ID: 47fc9ee4)
+gh api graphql -f query="mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: \"PVT_kwHOCKbbIM4BRreS\",
+    itemId: \"$ITEM_ID\",
+    fieldId: \"PVTSSF_lAHOCKbbIM4BRreSzg_b9-w\",
+    value: { singleSelectOptionId: \"47fc9ee4\" }
+  }) { projectV2Item { id } }
+}"
+```
+
+Project field IDs (do not change these):
+- Project ID: `PVT_kwHOCKbbIM4BRreS`
+- Status field ID: `PVTSSF_lAHOCKbbIM4BRreSzg_b9-w`
+- Status options: `f75ad846` = Todo · `47fc9ee4` = In Progress · `98236657` = Done
 
 ### 2. Create a feature branch from `develop`
 
@@ -46,7 +66,7 @@ Branch naming convention: `feature/<issue-number>-<kebab-case-description>`
 ```bash
 git push origin feature/<issue-number>-<short-description>
 
-gh pr create \
+PR_URL=$(gh pr create \
   --repo velascoamo-guillermo/my-pets \
   --base develop \
   --head feature/<issue-number>-<short-description> \
@@ -66,10 +86,20 @@ Closes #<issue-number>
 
 🤖 Generated with [Claude Code](https://claude.com/claude-code)
 EOF
-)"
+)")
+
+echo "PR created: $PR_URL"
 ```
 
 **Always use `--assignee velascoamo-guillermo` on every PR.**
+
+After creating the PR, add it to the GitHub Project board:
+
+```bash
+PR_NUMBER=$(echo $PR_URL | grep -o '[0-9]*$')
+PR_NODE=$(gh api repos/velascoamo-guillermo/my-pets/pulls/$PR_NUMBER --jq '.node_id')
+gh api graphql -f query="mutation { addProjectV2ItemById(input: {projectId: \"PVT_kwHOCKbbIM4BRreS\", contentId: \"$PR_NODE\"}) { item { id } } }"
+```
 
 ### 5. Auto-merge
 
@@ -114,10 +144,11 @@ Branch protection on `main` requires the `TypeScript & Tests` check to pass befo
 
 Project board: https://github.com/users/velascoamo-guillermo/projects/2
 
-All issues for planned features live here. When starting a task:
-1. Check the board for the next open issue
-2. Start implementation on a feature branch
-3. PR → develop → auto-merge closes the issue
+All issues for planned features live here. Per-task checklist:
+1. Pick next open issue → move to **In Progress** on the board
+2. Create feature branch → implement → push
+3. Open PR → add PR to project board
+4. CI passes → auto-merge → issue auto-closed → branch deleted
 
 ---
 
