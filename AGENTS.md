@@ -107,15 +107,29 @@ PRs to `develop` and `main` are configured with auto-merge enabled. Once the Git
 
 Do not manually merge. Wait for CI to pass.
 
-### 6. Close the issue
+### 6. Move issue to Done and close it
 
-After the PR merges, close the corresponding GitHub issue:
+After the PR merges, move the issue to **Done** on the project board and close it:
 
 ```bash
-gh issue close <issue-number> --repo velascoamo-guillermo/my-pets --comment "Implemented in PR #<pr-number>"
+# Move issue to Done on the project board
+ITEM_ID=$(gh api graphql -f query="query { node(id: \"PVT_kwHOCKbbIM4BRreS\") { ... on ProjectV2 { items(first: 50) { nodes { id content { ... on Issue { number } } } } } } }" --jq ".data.node.items.nodes[] | select(.content.number == <issue-number>) | .id")
+
+gh api graphql -f query="mutation {
+  updateProjectV2ItemFieldValue(input: {
+    projectId: \"PVT_kwHOCKbbIM4BRreS\",
+    itemId: \"$ITEM_ID\",
+    fieldId: \"PVTSSF_lAHOCKbbIM4BRreSzg_b9-w\",
+    value: { singleSelectOptionId: \"98236657\" }
+  }) { projectV2Item { id } }
+}"
 ```
 
-If the PR body contains `Closes #<issue-number>`, GitHub will close the issue automatically on merge.
+If the PR body contains `Closes #<issue-number>`, GitHub will close the issue automatically on merge. Otherwise close it manually:
+
+```bash
+gh issue close <issue-number> --repo velascoamo-guillermo/my-pets
+```
 
 ---
 
