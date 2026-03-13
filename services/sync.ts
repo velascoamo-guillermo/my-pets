@@ -14,7 +14,7 @@ import * as Sentry from "@sentry/react-native";
 import { eq } from "drizzle-orm";
 import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 import { Directory, File as FSFile, Paths } from "expo-file-system";
-import { supabase } from "./supabase";
+import { ensureSession, supabase } from "./supabase";
 
 // --- Sync meta table (key-value store for tracking sync state) ---
 
@@ -107,9 +107,10 @@ export async function getSyncStats(): Promise<{
 
 // --- Push: Local -> Supabase ---
 
-function petToRemote(pet: Pet) {
+function petToRemote(pet: Pet, userId: string) {
   return {
     id: pet.id,
+    user_id: userId,
     name: pet.name,
     species: pet.species,
     birth_date: pet.birthDate?.toISOString() ?? null,
@@ -122,9 +123,10 @@ function petToRemote(pet: Pet) {
   };
 }
 
-function visitToRemote(visit: VetVisit) {
+function visitToRemote(visit: VetVisit, userId: string) {
   return {
     id: visit.id,
+    user_id: userId,
     pet_id: visit.petId,
     type: visit.type,
     title: visit.title,
@@ -138,9 +140,10 @@ function visitToRemote(visit: VetVisit) {
   };
 }
 
-function fileToRemote(file: PetFile) {
+function fileToRemote(file: PetFile, userId: string) {
   return {
     id: file.id,
+    user_id: userId,
     pet_id: file.petId,
     name: file.name,
     remote_uri: file.remoteUri,
@@ -176,7 +179,7 @@ async function uploadPetImage(pet: Pet): Promise<string | null> {
   return publicUrl;
 }
 
-async function pushPets(): Promise<number> {
+async function pushPets(userId: string): Promise<number> {
   const pending = await getPendingPets();
   if (pending.length === 0) return 0;
 
@@ -185,7 +188,7 @@ async function pushPets(): Promise<number> {
 
     const { error } = await supabase
       .from("pets")
-      .upsert(petToRemote({ ...pet, imageUri }), { onConflict: "id" });
+      .upsert(petToRemote({ ...pet, imageUri }, userId), { onConflict: "id" });
 
     if (error) throw new Error(`Push pets failed: ${error.message}`);
 
@@ -198,13 +201,13 @@ async function pushPets(): Promise<number> {
   return pending.length;
 }
 
-async function pushVisits(): Promise<number> {
+async function pushVisits(userId: string): Promise<number> {
   const pending = await getPendingVisits();
   if (pending.length === 0) return 0;
 
   const { error } = await supabase
     .from("vet_visits")
-    .upsert(pending.map(visitToRemote), { onConflict: "id" });
+    .upsert(pending.map((v) => visitToRemote(v, userId)), { onConflict: "id" });
 
   if (error) throw new Error(`Push visits failed: ${error.message}`);
 
@@ -243,7 +246,7 @@ async function uploadFileToStorage(file: PetFile): Promise<string> {
   return publicUrl;
 }
 
-async function pushFiles(): Promise<number> {
+async function pushFiles(userId: string): Promise<number> {
   const pending = await getPendingFiles();
   if (pending.length === 0) return 0;
 
@@ -255,7 +258,7 @@ async function pushFiles(): Promise<number> {
         remoteUri = await uploadFileToStorage(file);
       }
 
-      const remoteData = { ...fileToRemote(file), remote_uri: remoteUri };
+      const remoteData = { ...fileToRemote(file, userId), remote_uri: remoteUri };
       const { error } = await supabase
         .from("pet_files")
         .upsert(remoteData, { onConflict: "id" });
@@ -492,9 +495,10 @@ async function pullFiles(lastSync: string | null): Promise<{
 
 // --- Analyses sync ---
 
-function analysisToRemote(analysis: FileAnalysis) {
+function analysisToRemote(analysis: FileAnalysis, userId: string) {
   return {
     id: analysis.id,
+    user_id: userId,
     file_id: analysis.fileId,
     pet_id: analysis.petId,
     visit_id: analysis.visitId,
@@ -517,7 +521,7 @@ async function getPendingAnalyses(): Promise<FileAnalysis[]> {
     .all();
 }
 
-async function pushAnalyses(): Promise<number> {
+async function pushAnalyses(userId: string): Promise<number> {
   const pending = await getPendingAnalyses();
   if (pending.length === 0) return 0;
 
@@ -526,7 +530,7 @@ async function pushAnalyses(): Promise<number> {
     try {
       const { error } = await supabase
         .from("file_analyses")
-        .upsert(analysisToRemote(analysis), { onConflict: "id" });
+        .upsert(analysisToRemote(analysis, userId), { onConflict: "id" });
 
       if (error) throw error;
 
@@ -640,14 +644,15 @@ export async function syncWithSupabase(): Promise<SyncResult> {
   };
 
   try {
+    const userId = await ensureSession();
     const lastSync = await getLastSyncAt();
     const syncStartedAt = new Date();
 
     // Push first (pets before visits due to FK constraint)
-    result.pushed.pets = await pushPets();
-    result.pushed.visits = await pushVisits();
-    result.pushed.files = await pushFiles();
-    result.pushed.analyses = await pushAnalyses();
+    result.pushed.pets = await pushPets(userId);
+    result.pushed.visits = await pushVisits(userId);
+    result.pushed.files = await pushFiles(userId);
+    result.pushed.analyses = await pushAnalyses(userId);
 
     // Then pull (pets before visits due to FK constraint)
     const pulledPets = await pullPets(lastSync);

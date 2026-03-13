@@ -47,3 +47,4 @@ app-example
 # Supabase
 supabase/.temp
 credentials.json
+scripts/*.p8
