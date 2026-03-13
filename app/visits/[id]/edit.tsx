@@ -10,12 +10,12 @@ import {
 
 const colors = {
   light: {
-    background: "#ffffff",
-    tint: "#007AFF",
+    background: "#FFF0F5",
+    tint: "#D4517A",
   },
   dark: {
-    background: "#000000",
-    tint: "#0A84FF",
+    background: "#1a0d12",
+    tint: "#F07098",
   },
 };
 

@@ -11,7 +11,7 @@ export default function EditPetScreen() {
       <>
         <Stack.Screen options={{ title: "Edit Pet" }} />
         <View style={styles.loading}>
-          <ActivityIndicator size="large" color="#007AFF" />
+          <ActivityIndicator size="large" color="#D4517A" />
         </View>
       </>
     );

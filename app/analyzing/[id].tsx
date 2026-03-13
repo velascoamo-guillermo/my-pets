@@ -14,19 +14,19 @@ import Animated, {
 
 const colors = {
   light: {
-    background: "#f5f5f5",
+    background: "#FFF0F5",
     cardBackground: "#ffffff",
     text: "#333",
     textSecondary: "#666",
-    tint: "#007AFF",
+    tint: "#D4517A",
     critical: "#FF3B30",
   },
   dark: {
-    background: "#000000",
-    cardBackground: "#1c1c1e",
+    background: "#1a0d12",
+    cardBackground: "#2a1520",
     text: "#ffffff",
     textSecondary: "#aaaaaa",
-    tint: "#0A84FF",
+    tint: "#F07098",
     critical: "#FF453A",
   },
 };

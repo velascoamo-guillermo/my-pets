@@ -1,18 +1,21 @@
-import { useCallback, useState } from "react";
-import { Alert } from "react-native";
-import * as Sentry from "@sentry/react-native";
-import * as Haptics from "expo-haptics";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { getSyncStats, syncWithSupabase } from "@/services/sync";
+import { useAuth } from "@/context/AuthContext";
+import { queryKeys } from "@/lib/queryKeys";
+import { signOut } from "@/services/auth";
 import {
   cancelAllNotifications,
   getScheduledNotifications,
 } from "@/services/notifications";
-import { queryKeys } from "@/lib/queryKeys";
+import { getSyncStats, syncWithSupabase } from "@/services/sync";
+import * as Sentry from "@sentry/react-native";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import * as Haptics from "expo-haptics";
+import { useCallback, useState } from "react";
+import { Alert } from "react-native";
 
 export function useSettingsScreen() {
   const queryClient = useQueryClient();
   const [isSyncing, setIsSyncing] = useState(false);
+  const { user } = useAuth();
 
   const { data: syncStats } = useQuery({
     queryKey: queryKeys.syncStats,
@@ -83,12 +86,39 @@ export function useSettingsScreen() {
     );
   }, [queryClient]);
 
+  const handleSignOut = useCallback(() => {
+    Alert.alert(
+      "Sign Out",
+      "Are you sure you want to sign out?",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Sign Out",
+          style: "destructive",
+          onPress: async () => {
+            try {
+              await signOut();
+            } catch (err) {
+              Sentry.captureException(err);
+            }
+          },
+        },
+      ],
+    );
+  }, []);
+
+  const userEmail = user?.email ?? null;
+  const userProvider = user?.app_metadata?.provider ?? "email";
+
   return {
     totalPending,
     lastSyncLabel,
     scheduledNotifications,
     isSyncing,
+    userEmail,
+    userProvider,
     handleSync,
     handleClearNotifications,
+    handleSignOut,
   };
 }

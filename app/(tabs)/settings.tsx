@@ -11,21 +11,21 @@ import {
 
 const colors = {
   light: {
-    background: "#f5f5f5",
+    background: "#FFF0F5",
     cardBackground: "#ffffff",
     text: "#333",
     textSecondary: "#666",
     textTertiary: "#999",
-    tint: "#007AFF",
+    tint: "#D4517A",
     chevron: "#999",
   },
   dark: {
-    background: "#000000",
-    cardBackground: "#1c1c1e",
+    background: "#1a0d12",
+    cardBackground: "#2a1520",
     text: "#ffffff",
     textSecondary: "#aaaaaa",
     textTertiary: "#777",
-    tint: "#0A84FF",
+    tint: "#F07098",
     chevron: "#666",
   },
 };
@@ -38,8 +38,11 @@ export default function SettingsScreen() {
     lastSyncLabel,
     scheduledNotifications,
     isSyncing,
+    userEmail,
+    userProvider,
     handleSync,
     handleClearNotifications,
+    handleSignOut,
   } = useSettingsScreen();
 
   return (
@@ -47,6 +50,32 @@ export default function SettingsScreen() {
       style={[styles.container, { backgroundColor: theme.background }]}
       contentInsetAdjustmentBehavior="automatic"
     >
+      {/* Account */}
+      <View style={styles.section}>
+        <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
+          Account
+        </Text>
+        <View style={[styles.card, { backgroundColor: theme.cardBackground }]}>
+          <View style={styles.aboutRow}>
+            <Text style={[styles.aboutLabel, { color: theme.textSecondary }]}>
+              Signed in as
+            </Text>
+            <Text
+              style={[styles.aboutValue, { color: theme.text }]}
+              numberOfLines={1}
+            >
+              {userEmail ?? userProvider}
+            </Text>
+          </View>
+          <Pressable style={styles.menuItem} onPress={handleSignOut}>
+            <Ionicons name="log-out-outline" size={24} color="#FF3B30" />
+            <Text style={[styles.menuItemText, { color: "#FF3B30" }]}>
+              Sign Out
+            </Text>
+          </Pressable>
+        </View>
+      </View>
+
       <View style={styles.section}>
         <Text style={[styles.sectionTitle, { color: theme.textSecondary }]}>
           Sync Status

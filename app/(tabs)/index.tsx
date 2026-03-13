@@ -13,16 +13,16 @@ import {
 
 const colors = {
   light: {
-    background: "#f5f5f5",
-    tint: "#007AFF",
-    emptyIcon: "#ccc",
+    background: "#FFF0F5",
+    tint: "#D4517A",
+    emptyIcon: "#f0c4d4",
     emptyText: "#666",
     emptySubtext: "#999",
   },
   dark: {
-    background: "#000000",
-    tint: "#0A84FF",
-    emptyIcon: "#555",
+    background: "#1a0d12",
+    tint: "#F07098",
+    emptyIcon: "#5a2f3f",
     emptyText: "#aaa",
     emptySubtext: "#777",
   },

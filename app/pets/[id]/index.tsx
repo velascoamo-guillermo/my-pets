@@ -18,26 +18,26 @@ import Reanimated, { LinearTransition } from "react-native-reanimated";
 
 const colors = {
   light: {
-    background: "#f5f5f5",
+    background: "#FFF0F5",
     cardBackground: "#ffffff",
     text: "#333",
     textSecondary: "#666",
     textTertiary: "#999",
-    tint: "#007AFF",
-    placeholder: "#f0f0f0",
-    placeholderIcon: "#ccc",
-    emptyIcon: "#ccc",
+    tint: "#D4517A",
+    placeholder: "#fce4ec",
+    placeholderIcon: "#f0c4d4",
+    emptyIcon: "#f0c4d4",
   },
   dark: {
-    background: "#000000",
-    cardBackground: "#1c1c1e",
+    background: "#1a0d12",
+    cardBackground: "#2a1520",
     text: "#ffffff",
     textSecondary: "#aaaaaa",
     textTertiary: "#777",
-    tint: "#0A84FF",
-    placeholder: "#2c2c2e",
-    placeholderIcon: "#555",
-    emptyIcon: "#555",
+    tint: "#F07098",
+    placeholder: "#3a1f2a",
+    placeholderIcon: "#5a2f3f",
+    emptyIcon: "#5a2f3f",
   },
 };
 

@@ -1,15 +1,19 @@
+import "@/polyfills";
 import { OfflineBanner } from "@/components/OfflineBanner";
+import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { DatabaseProvider } from "@/db";
 import { NetworkProvider } from "@/hooks/useNetworkStatus";
 import { useNotificationSetup } from "@/hooks/useNotifications";
 import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { queryClient } from "@/lib/queryClient";
+import { supabase } from "@/services/supabase";
 import { syncWithSupabase } from "@/services/sync";
 import { Ionicons } from "@expo/vector-icons";
 import * as Sentry from "@sentry/react-native";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { isLiquidGlassAvailable } from "expo-glass-effect";
-import { Link, Stack } from "expo-router";
+import * as Linking from "expo-linking";
+import { Link, Stack, router } from "expo-router";
 import { useEffect, useRef } from "react";
 import { AppState, Pressable, StyleSheet, useColorScheme } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -36,16 +40,16 @@ Sentry.init({
 
 const colors = {
   light: {
-    background: "#ffffff",
+    background: "#FFF0F5",
     text: "#000000",
-    tint: "#007AFF",
-    headerBackground: "#f8f8f8",
+    tint: "#D4517A",
+    headerBackground: "#FFF0F5",
   },
   dark: {
-    background: "#000000",
+    background: "#1a0d12",
     text: "#ffffff",
-    tint: "#0A84FF",
-    headerBackground: "#1c1c1e",
+    tint: "#F07098",
+    headerBackground: "#2a1520",
   },
 };
 
@@ -55,8 +59,32 @@ function AppContent() {
   const colorScheme = useColorScheme();
   const theme = colors[colorScheme ?? "light"];
   const appState = useRef(AppState.currentState);
+  const { user, isLoading } = useAuth();
 
+  // Navigation guard: redirect based on auth state
   useEffect(() => {
+    if (isLoading) return;
+    if (user) {
+      router.replace("/(tabs)");
+    } else {
+      router.replace("/(auth)");
+    }
+  }, [user, isLoading]);
+
+  // Handle OAuth deep link redirect (Google sign-in callback)
+  useEffect(() => {
+    const sub = Linking.addEventListener("url", ({ url }) => {
+      supabase.auth.exchangeCodeForSession(url).catch((err) => {
+        Sentry.captureException(err);
+      });
+    });
+    return () => sub.remove();
+  }, []);
+
+  // Sync with Supabase on foreground — only when authenticated
+  useEffect(() => {
+    if (!user) return;
+
     const sub = AppState.addEventListener("change", (nextState) => {
       if (
         appState.current.match(/inactive|background/) &&
@@ -66,10 +94,11 @@ function AppContent() {
       }
       appState.current = nextState;
     });
-    // Also sync on initial mount
+
     syncWithSupabase().catch((err) => Sentry.captureException(err));
+
     return () => sub.remove();
-  }, []);
+  }, [user]);
 
   return (
     <>
@@ -81,6 +110,10 @@ function AppContent() {
           contentStyle: { backgroundColor: theme.background },
         }}
       >
+        <Stack.Screen
+          name="(auth)"
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="(tabs)"
           options={{
@@ -133,11 +166,13 @@ export default Sentry.wrap(function RootLayout() {
     <DatabaseProvider>
       <QueryClientProvider client={queryClient}>
         <NetworkProvider>
-          <GestureHandlerRootView style={{ flex: 1 }}>
-            <KeyboardProvider>
-              <AppContent />
-            </KeyboardProvider>
-          </GestureHandlerRootView>
+          <AuthProvider>
+            <GestureHandlerRootView style={{ flex: 1 }}>
+              <KeyboardProvider>
+                <AppContent />
+              </KeyboardProvider>
+            </GestureHandlerRootView>
+          </AuthProvider>
         </NetworkProvider>
       </QueryClientProvider>
     </DatabaseProvider>

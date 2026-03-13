@@ -16,30 +16,30 @@ import {
 
 const colors = {
   light: {
-    background: "#f5f5f5",
+    background: "#FFF0F5",
     cardBackground: "#ffffff",
     text: "#333",
     textSecondary: "#666",
     textTertiary: "#999",
-    tint: "#007AFF",
+    tint: "#D4517A",
     normal: "#4CAF50",
     high: "#FF9500",
     low: "#FF9500",
     critical: "#FF3B30",
-    divider: "#eee",
+    divider: "#f0c4d4",
   },
   dark: {
-    background: "#000000",
-    cardBackground: "#1c1c1e",
+    background: "#1a0d12",
+    cardBackground: "#2a1520",
     text: "#ffffff",
     textSecondary: "#aaaaaa",
     textTertiary: "#777",
-    tint: "#0A84FF",
+    tint: "#F07098",
     normal: "#32D74B",
     high: "#FF9F0A",
     low: "#FF9F0A",
     critical: "#FF453A",
-    divider: "#333",
+    divider: "#5a2f3f",
   },
 };
 
