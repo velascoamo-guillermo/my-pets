@@ -48,3 +48,4 @@ app-example
 supabase/.temp
 credentials.json
 scripts/*.p8
+package-lock.json
