@@ -1,0 +1,29 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  checks:
+    name: TypeScript & Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: TypeScript check
+        run: bunx tsc --noEmit
+
+      - name: Unit tests
+        run: bun test __tests__/db __tests__/validation --forceExit
+
+      - name: Integration tests
+        run: bun test __tests__/integration --forceExit
