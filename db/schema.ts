@@ -10,6 +10,9 @@ export const pets = sqliteTable("pets", {
   vetName: text("vet_name"),
   vetPhone: text("vet_phone"),
   vetAddress: text("vet_address"),
+  // Sharing: null = current user is the owner; populated = shared pet from another user
+  ownerId: text("owner_id"),
+  isShared: integer("is_shared", { mode: "boolean" }).notNull().default(false),
   createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
   updatedAt: integer("updated_at", { mode: "timestamp" }).notNull(),
   syncStatus: text("sync_status", {
@@ -103,6 +106,40 @@ export const fileAnalyses = sqliteTable("file_analyses", {
 
 export type FileAnalysis = typeof fileAnalyses.$inferSelect;
 export type NewFileAnalysis = typeof fileAnalyses.$inferInsert;
+
+export const petShares = sqliteTable("pet_shares", {
+  id: text("id").primaryKey(),
+  petId: text("pet_id")
+    .notNull()
+    .references(() => pets.id, { onDelete: "cascade" }),
+  ownerId: text("owner_id").notNull(),
+  memberId: text("member_id").notNull(),
+  memberEmail: text("member_email"),
+  memberDisplayName: text("member_display_name"),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+export type PetShare = typeof petShares.$inferSelect;
+export type NewPetShare = typeof petShares.$inferInsert;
+
+export const petInvitations = sqliteTable("pet_invitations", {
+  id: text("id").primaryKey(),
+  petId: text("pet_id")
+    .notNull()
+    .references(() => pets.id, { onDelete: "cascade" }),
+  ownerId: text("owner_id").notNull(),
+  inviteeEmail: text("invitee_email").notNull(),
+  status: text("status", {
+    enum: ["pending", "accepted", "declined", "expired"],
+  })
+    .notNull()
+    .default("pending"),
+  expiresAt: integer("expires_at", { mode: "timestamp" }).notNull(),
+  createdAt: integer("created_at", { mode: "timestamp" }).notNull(),
+});
+
+export type PetInvitation = typeof petInvitations.$inferSelect;
+export type NewPetInvitation = typeof petInvitations.$inferInsert;
 
 export type LabValue = {
   name: string;

@@ -31,6 +31,8 @@ export const testPet: Pet = {
   vetName: null,
   vetPhone: null,
   vetAddress: null,
+  ownerId: null,
+  isShared: false,
   syncStatus: "pending",
   createdAt: new Date("2025-01-01"),
   updatedAt: new Date("2025-01-01"),

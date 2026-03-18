@@ -71,6 +71,8 @@ EOF
 
 **Always use `--assignee velascoamo-guillermo` on every PR.**
 
+The PR is automatically linked to the issue via `Closes #<issue-number>` in the body — GitHub shows it under "Development" in the issue. Do NOT add PRs to the project board as separate items.
+
 ### 5. Auto-merge
 
 PRs to `develop` and `main` are configured with auto-merge enabled. Once the GitHub Actions `PR Checks` workflow passes (TypeScript + tests), the PR will automatically merge and the source branch will be deleted.
