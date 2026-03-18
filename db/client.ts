@@ -98,4 +98,47 @@ export async function initDatabase() {
       value TEXT NOT NULL
     );
   `);
+
+  // Migration: add owner_id and is_shared columns to pets
+  const petColumns = expoDb.getAllSync<{ name: string }>("PRAGMA table_info(pets)");
+  if (!petColumns.some((c) => c.name === "owner_id")) {
+    expoDb.execSync("ALTER TABLE pets ADD COLUMN owner_id TEXT");
+  }
+  if (!petColumns.some((c) => c.name === "is_shared")) {
+    expoDb.execSync("ALTER TABLE pets ADD COLUMN is_shared INTEGER NOT NULL DEFAULT 0");
+  }
+
+  // Pet shares table (cached member list per pet)
+  expoDb.execSync(`
+    CREATE TABLE IF NOT EXISTS pet_shares (
+      id TEXT PRIMARY KEY,
+      pet_id TEXT NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+      owner_id TEXT NOT NULL,
+      member_id TEXT NOT NULL,
+      member_email TEXT,
+      member_display_name TEXT,
+      created_at INTEGER NOT NULL,
+      UNIQUE (pet_id, member_id)
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_pet_shares_pet_id    ON pet_shares(pet_id);
+    CREATE INDEX IF NOT EXISTS idx_pet_shares_member_id ON pet_shares(member_id);
+  `);
+
+  // Pet invitations table
+  expoDb.execSync(`
+    CREATE TABLE IF NOT EXISTS pet_invitations (
+      id TEXT PRIMARY KEY,
+      pet_id TEXT NOT NULL REFERENCES pets(id) ON DELETE CASCADE,
+      owner_id TEXT NOT NULL,
+      invitee_email TEXT NOT NULL,
+      status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'accepted', 'declined', 'expired')),
+      expires_at INTEGER NOT NULL,
+      created_at INTEGER NOT NULL
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_pet_invitations_pet_id        ON pet_invitations(pet_id);
+    CREATE INDEX IF NOT EXISTS idx_pet_invitations_invitee_email ON pet_invitations(invitee_email);
+  `);
 }

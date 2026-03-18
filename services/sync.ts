@@ -2,6 +2,8 @@ import { db } from "@/db/client";
 import {
   fileAnalyses,
   petFiles,
+  petInvitations,
+  petShares,
   pets,
   vetVisits,
   type FileAnalysis,
@@ -28,7 +30,7 @@ export const syncMeta = sqliteTable("sync_meta", {
 export type SyncResult = {
   success: boolean;
   pushed: { pets: number; visits: number; files: number; analyses: number };
-  pulled: { pets: number; visits: number; files: number; analyses: number };
+  pulled: { pets: number; visits: number; files: number; analyses: number; shares: number; invitations: number };
   deleted: { pets: number; visits: number; files: number; analyses: number };
   error?: string;
 };
@@ -111,6 +113,7 @@ function petToRemote(pet: Pet, userId: string) {
   return {
     id: pet.id,
     user_id: userId,
+    owner_id: pet.ownerId ?? userId,
     name: pet.name,
     species: pet.species,
     birth_date: pet.birthDate?.toISOString() ?? null,
@@ -319,6 +322,8 @@ async function pullPets(lastSync: string | null): Promise<{
       vetName: remote.vet_name,
       vetPhone: remote.vet_phone,
       vetAddress: remote.vet_address,
+      ownerId: remote.owner_id ?? remote.user_id ?? null,
+      isShared: remote.is_shared ?? false,
       createdAt: new Date(remote.created_at),
       updatedAt: new Date(remote.updated_at),
       syncStatus: "synced" as const,
@@ -633,13 +638,107 @@ export async function pushDeleteToSupabase(
   }
 }
 
+// --- Shares and Invitations sync ---
+
+async function pullShares(): Promise<number> {
+  const { data, error } = await supabase
+    .from("pet_shares")
+    .select("id, pet_id, owner_id, member_id, created_at, profiles:member_id(email, display_name)");
+
+  if (error) throw new Error(`Pull shares failed: ${error.message}`);
+  if (!data) return 0;
+
+  // Delete local shares not present in remote
+  const remoteIds = new Set(data.map((r) => r.id));
+  const localShares = await db.select().from(petShares);
+  for (const local of localShares) {
+    if (!remoteIds.has(local.id)) {
+      await db.delete(petShares).where(eq(petShares.id, local.id));
+    }
+  }
+
+  let upserted = 0;
+  for (const remote of data) {
+    const profile = Array.isArray(remote.profiles) ? remote.profiles[0] : remote.profiles;
+    await db
+      .insert(petShares)
+      .values({
+        id: remote.id,
+        petId: remote.pet_id,
+        ownerId: remote.owner_id,
+        memberId: remote.member_id,
+        memberEmail: profile?.email ?? null,
+        memberDisplayName: profile?.display_name ?? null,
+        createdAt: new Date(remote.created_at),
+      })
+      .onConflictDoUpdate({
+        target: [petShares.petId, petShares.memberId],
+        set: {
+          memberEmail: profile?.email ?? null,
+          memberDisplayName: profile?.display_name ?? null,
+        },
+      });
+    upserted++;
+  }
+
+  // Update isShared flag on pets: a pet is shared if it has any share rows
+  const sharedPetIds = new Set(data.map((r) => r.pet_id));
+  const allPets = await db.select({ id: pets.id }).from(pets);
+  for (const pet of allPets) {
+    await db
+      .update(pets)
+      .set({ isShared: sharedPetIds.has(pet.id) })
+      .where(eq(pets.id, pet.id));
+  }
+
+  return upserted;
+}
+
+async function pullInvitations(): Promise<number> {
+  const { data, error } = await supabase.from("pet_invitations").select("*");
+
+  if (error) throw new Error(`Pull invitations failed: ${error.message}`);
+  if (!data) return 0;
+
+  // Delete local invitations not present in remote
+  const remoteIds = new Set(data.map((r) => r.id));
+  const localInvitations = await db.select().from(petInvitations);
+  for (const local of localInvitations) {
+    if (!remoteIds.has(local.id)) {
+      await db.delete(petInvitations).where(eq(petInvitations.id, local.id));
+    }
+  }
+
+  let upserted = 0;
+  for (const remote of data) {
+    await db
+      .insert(petInvitations)
+      .values({
+        id: remote.id,
+        petId: remote.pet_id,
+        ownerId: remote.owner_id,
+        inviteeEmail: remote.invitee_email,
+        status: remote.status as "pending" | "accepted" | "declined" | "expired",
+        expiresAt: new Date(remote.expires_at),
+        createdAt: new Date(remote.created_at),
+      })
+      .onConflictDoUpdate({
+        target: petInvitations.id,
+        set: { status: remote.status },
+      });
+    upserted++;
+  }
+
+  return upserted;
+}
+
 // --- Main sync function ---
 
 export async function syncWithSupabase(): Promise<SyncResult> {
   const result: SyncResult = {
     success: false,
     pushed: { pets: 0, visits: 0, files: 0, analyses: 0 },
-    pulled: { pets: 0, visits: 0, files: 0, analyses: 0 },
+    pulled: { pets: 0, visits: 0, files: 0, analyses: 0, shares: 0, invitations: 0 },
     deleted: { pets: 0, visits: 0, files: 0, analyses: 0 },
   };
 
@@ -670,6 +769,10 @@ export async function syncWithSupabase(): Promise<SyncResult> {
     const pulledAnalyses = await pullAnalyses(lastSync);
     result.pulled.analyses = pulledAnalyses.pulled;
     result.deleted.analyses = pulledAnalyses.deleted;
+
+    // Pull sharing data (no incremental filtering — always reconcile full set)
+    result.pulled.shares = await pullShares();
+    result.pulled.invitations = await pullInvitations();
 
     await setLastSyncAt(syncStartedAt);
     result.success = true;
