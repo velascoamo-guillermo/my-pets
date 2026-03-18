@@ -38,6 +38,7 @@ gh api graphql -f query="mutation {
 ```
 
 Project field IDs (do not change these):
+
 - Project ID: `PVT_kwHOCKbbIM4BRreS`
 - Status field ID: `PVTSSF_lAHOCKbbIM4BRreSzg_b9-w`
 - Status options: `f75ad846` = Todo · `47fc9ee4` = In Progress · `98236657` = Done
@@ -93,13 +94,7 @@ echo "PR created: $PR_URL"
 
 **Always use `--assignee velascoamo-guillermo` on every PR.**
 
-After creating the PR, add it to the GitHub Project board:
-
-```bash
-PR_NUMBER=$(echo $PR_URL | grep -o '[0-9]*$')
-PR_NODE=$(gh api repos/velascoamo-guillermo/my-pets/pulls/$PR_NUMBER --jq '.node_id')
-gh api graphql -f query="mutation { addProjectV2ItemById(input: {projectId: \"PVT_kwHOCKbbIM4BRreS\", contentId: \"$PR_NODE\"}) { item { id } } }"
-```
+The PR is automatically linked to the issue via `Closes #<issue-number>` in the body — GitHub shows it under "Development" in the issue. Do NOT add PRs to the project board as separate items.
 
 ### 5. Auto-merge
 
@@ -135,20 +130,20 @@ gh issue close <issue-number> --repo velascoamo-guillermo/my-pets
 
 ## Branch Strategy
 
-| Branch | Purpose | Merges via |
-|--------|---------|------------|
-| `main` | Production / App Store builds | PR from `develop` (auto-merge) |
-| `develop` | Integration branch | PR from feature branches (auto-merge) |
-| `feature/*` | Individual tasks | PR to `develop` |
+| Branch      | Purpose                       | Merges via                            |
+| ----------- | ----------------------------- | ------------------------------------- |
+| `main`      | Production / App Store builds | PR from `develop` (auto-merge)        |
+| `develop`   | Integration branch            | PR from feature branches (auto-merge) |
+| `feature/*` | Individual tasks              | PR to `develop`                       |
 
 ---
 
 ## CI/CD
 
-| Trigger | What runs |
-|---------|-----------|
-| Push to `develop` or `main` | EAS workflow: fingerprint → build iOS → or OTA update |
-| PR to `main` | GitHub Actions: TypeScript check + unit tests + integration tests |
+| Trigger                     | What runs                                                         |
+| --------------------------- | ----------------------------------------------------------------- |
+| Push to `develop` or `main` | EAS workflow: fingerprint → build iOS → or OTA update             |
+| PR to `main`                | GitHub Actions: TypeScript check + unit tests + integration tests |
 
 Branch protection on `main` requires the `TypeScript & Tests` check to pass before merge.
 
@@ -159,6 +154,7 @@ Branch protection on `main` requires the `TypeScript & Tests` check to pass befo
 Project board: https://github.com/users/velascoamo-guillermo/projects/2
 
 All issues for planned features live here. Per-task checklist:
+
 1. Pick next open issue → move to **In Progress** on the board
 2. Create feature branch → implement → push
 3. Open PR → add PR to project board
@@ -175,6 +171,7 @@ Types: feat | fix | chore | ci | docs | refactor | test
 ```
 
 Examples:
+
 - `feat: add pet_shares and pet_invitations tables (#1)`
 - `fix: correct RLS policy for shared pet updates (#3)`
 - `test: add integration tests for pet sharing sync (#3)`

@@ -4,6 +4,7 @@ on:
   pull_request:
     branches:
       - main
+      - develop
 
 jobs:
   checks:
@@ -23,7 +24,7 @@ jobs:
         run: bunx tsc --noEmit
 
       - name: Unit tests
-        run: bun test __tests__/db __tests__/validation --forceExit
+        run: bunx jest __tests__/db __tests__/validation --forceExit
 
       - name: Integration tests
-        run: bun test __tests__/integration --forceExit
+        run: bunx jest __tests__/integration --forceExit
