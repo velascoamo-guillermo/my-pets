@@ -174,8 +174,14 @@ export function usePetDetailScreen() {
     [visits, markCompleteMutation],
   );
 
+  const isOwner = !pet?.ownerId;
+
   const handleEditPress = useCallback(() => {
     router.push(`/pets/${id}/edit`);
+  }, [id, router]);
+
+  const handleManageMembers = useCallback(() => {
+    router.push(`/pets/${id}/members`);
   }, [id, router]);
 
   const handleAddVisitPress = useCallback(() => {
@@ -215,6 +221,7 @@ export function usePetDetailScreen() {
     upcomingVisits,
     pastVisits,
     age,
+    isOwner,
     handleDelete,
     handlePickFile,
     handleDeleteFile,
@@ -222,6 +229,7 @@ export function usePetDetailScreen() {
     handleDeleteVisit,
     handleCompleteVisit,
     handleEditPress,
+    handleManageMembers,
     handleAddVisitPress,
     handleVisitPress,
   };

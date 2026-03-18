@@ -1,4 +1,5 @@
 import { FileCard } from "@/components/FileCard";
+import { SharedBadge } from "@/components/SharedBadge";
 import { VisitCard } from "@/components/VisitCard";
 import { usePetDetailScreen } from "@/hooks/usePetDetailScreen";
 import { Ionicons } from "@expo/vector-icons";
@@ -53,6 +54,7 @@ export default function PetDetailScreen() {
     upcomingVisits,
     pastVisits,
     age,
+    isOwner,
     handleDelete,
     handlePickFile,
     handleDeleteFile,
@@ -60,6 +62,7 @@ export default function PetDetailScreen() {
     handleDeleteVisit,
     handleCompleteVisit,
     handleEditPress,
+    handleManageMembers,
     handleAddVisitPress,
     handleVisitPress,
   } = usePetDetailScreen();
@@ -123,7 +126,28 @@ export default function PetDetailScreen() {
               {age}
             </Text>
           )}
+          {pet.isShared && <SharedBadge />}
+          {!isOwner && (
+            <Text style={[styles.sharedBy, { color: theme.textTertiary }]}>
+              Shared with you
+            </Text>
+          )}
         </View>
+
+        {isOwner && (
+          <View style={[styles.manageMembersRow, { paddingHorizontal: 16 }]}>
+            <Pressable
+              style={[styles.manageMembersButton, { backgroundColor: theme.cardBackground }]}
+              onPress={handleManageMembers}
+            >
+              <Ionicons name="people-outline" size={20} color={theme.tint} />
+              <Text style={[styles.manageMembersText, { color: theme.tint }]}>
+                Manage Members
+              </Text>
+              <Ionicons name="chevron-forward" size={16} color={theme.textTertiary} />
+            </Pressable>
+          </View>
+        )}
 
         {(pet.vetName || pet.vetPhone || pet.vetAddress) && (
           <View style={styles.infoSection}>
@@ -329,17 +353,19 @@ export default function PetDetailScreen() {
           )}
         </View>
 
-        <Pressable
-          testID="delete-pet-button"
-          style={[
-            styles.deleteButton,
-            { backgroundColor: theme.cardBackground },
-          ]}
-          onPress={handleDelete}
-        >
-          <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-          <Text style={styles.deleteButtonText}>Delete Pet</Text>
-        </Pressable>
+        {isOwner && (
+          <Pressable
+            testID="delete-pet-button"
+            style={[
+              styles.deleteButton,
+              { backgroundColor: theme.cardBackground },
+            ]}
+            onPress={handleDelete}
+          >
+            <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+            <Text style={styles.deleteButtonText}>Delete Pet</Text>
+          </Pressable>
+        )}
       </ScrollView>
     </>
   );
@@ -396,4 +422,14 @@ const styles = StyleSheet.create({
     borderColor: "#FF3B30",
   },
   deleteButtonText: { color: "#FF3B30", fontSize: 16, fontWeight: "500" },
+  sharedBy: { fontSize: 13, marginTop: 6 },
+  manageMembersRow: { marginTop: 12 },
+  manageMembersButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 10,
+    padding: 14,
+    borderRadius: 12,
+  },
+  manageMembersText: { flex: 1, fontSize: 16, fontWeight: "500" },
 });
