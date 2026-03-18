@@ -20,5 +20,12 @@ export const queryKeys = {
     byPet: (petId: string) => ["analyses", { petId }] as const,
     detail: (id: string) => ["analyses", id] as const,
   },
+  shares: {
+    byPet: (petId: string) => ["shares", { petId }] as const,
+  },
+  invitations: {
+    byPet: (petId: string) => ["invitations", { petId }] as const,
+    pending: ["invitations", "pending"] as const,
+  },
   syncStats: ["syncStats"] as const,
 } as const;

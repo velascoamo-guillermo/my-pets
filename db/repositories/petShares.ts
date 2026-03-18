@@ -1,4 +1,4 @@
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { db } from "../client";
 import { petShares, type NewPetShare, type PetShare } from "../schema";
 
@@ -22,7 +22,7 @@ export async function upsertShare(share: NewPetShare): Promise<void> {
 export async function deleteShare(petId: string, memberId: string): Promise<void> {
   await db
     .delete(petShares)
-    .where(eq(petShares.petId, petId));
+    .where(and(eq(petShares.petId, petId), eq(petShares.memberId, memberId)));
 }
 
 export async function deleteAllSharesForPet(petId: string): Promise<void> {
