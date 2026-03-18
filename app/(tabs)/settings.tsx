@@ -43,6 +43,9 @@ export default function SettingsScreen() {
     handleSync,
     handleClearNotifications,
     handleSignOut,
+    versionLabel,
+    updateId,
+    updateDate,
   } = useSettingsScreen();
 
   return (
@@ -199,7 +202,15 @@ export default function SettingsScreen() {
               Version
             </Text>
             <Text style={[styles.aboutValue, { color: theme.text }]}>
-              1.0.0
+              {versionLabel}
+            </Text>
+          </View>
+          <View style={styles.aboutRow}>
+            <Text style={[styles.aboutLabel, { color: theme.textSecondary }]}>
+              OTA Update
+            </Text>
+            <Text style={[styles.aboutValue, { color: theme.text }]}>
+              {updateId}{updateDate ? ` · ${updateDate}` : ""}
             </Text>
           </View>
           <View style={styles.aboutRow}>
