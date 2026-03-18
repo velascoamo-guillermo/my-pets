@@ -18,12 +18,14 @@ import {
   useMarkVisitComplete,
   useVisitsByPet,
 } from "@/hooks/useVisits";
+import { useAuth } from "@/context/AuthContext";
 import { calculateAge } from "@/lib/petAge";
 import { syncWithSupabase } from "@/services/sync";
 
 export function usePetDetailScreen() {
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { user } = useAuth();
 
   const { data: pet, isLoading: isPetLoading } = usePet(id);
   const { data: visits = [], isLoading: isVisitsLoading } = useVisitsByPet(id);
@@ -174,7 +176,7 @@ export function usePetDetailScreen() {
     [visits, markCompleteMutation],
   );
 
-  const isOwner = !pet?.ownerId;
+  const isOwner = !pet?.ownerId || pet.ownerId === user?.id;
 
   const handleEditPress = useCallback(() => {
     router.push(`/pets/${id}/edit`);
