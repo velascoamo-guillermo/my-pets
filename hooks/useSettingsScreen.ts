@@ -1,6 +1,8 @@
 import { useAuth } from "@/context/AuthContext";
 import { queryKeys } from "@/lib/queryKeys";
 import { signOut } from "@/services/auth";
+import Constants from "expo-constants";
+import * as Updates from "expo-updates";
 import {
   cancelAllNotifications,
   getScheduledNotifications,
@@ -110,6 +112,20 @@ export function useSettingsScreen() {
   const userEmail = user?.email ?? null;
   const userProvider = user?.app_metadata?.provider ?? "email";
 
+  const appVersion = Constants.expoConfig?.version ?? "—";
+  const buildNumber =
+    Constants.expoConfig?.ios?.buildNumber ??
+    Constants.expoConfig?.android?.versionCode?.toString() ??
+    null;
+  const versionLabel = buildNumber ? `${appVersion} (${buildNumber})` : appVersion;
+
+  const updateId = Updates.updateId
+    ? Updates.updateId.slice(0, 8)
+    : "dev";
+  const updateDate = Updates.createdAt
+    ? Updates.createdAt.toLocaleDateString()
+    : null;
+
   return {
     totalPending,
     lastSyncLabel,
@@ -120,5 +136,8 @@ export function useSettingsScreen() {
     handleSync,
     handleClearNotifications,
     handleSignOut,
+    versionLabel,
+    updateId,
+    updateDate,
   };
 }
